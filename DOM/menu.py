@@ -6,9 +6,13 @@ import typing as ty
 import pygame as pg
 from loguru import logger
 
-from base import Button, WidgetsGroup, Group
+from base import Button, WidgetsGroup, Group, Label, Anchor, Line
 from database.field_types import Resolution, ALLOWED_RESOLUTION
 from settings_alert import Settings
+from utils import load_image
+
+if ty.TYPE_CHECKING:
+    from network import User, NetworkClient
 
 
 class MenuButtons(WidgetsGroup):
@@ -66,12 +70,86 @@ class MenuButtons(WidgetsGroup):
         )
 
 
+class UserWidget(WidgetsGroup):
+    def __init__(self, parent: Social, y: int, user: User):
+        super(UserWidget, self).__init__(
+            parent,
+            x=0,
+            y=y,
+            padding=20,
+        )
+
+        self.icon = Label(
+            self,
+            x=0,
+            y=0,
+            width=50,
+            height=50,
+            anchor=Anchor.center,
+            sprite=load_image(rf"icons\icon_{user.icon}.png", (45, 45)),
+        )
+
+        self.username = Label(
+            self,
+            x=self.icon.rect.right + 30,
+            y=0,
+            text=user.username,
+            color=pg.Color("red"),
+            font=pg.font.Font(None, MenuScreen.font_size),
+        )
+
+        self.status = Label(
+            self,
+            x=self.icon.rect.right + 30,
+            y=self.username.rect.bottom + 5,
+            text="оффлайн",
+            color=pg.Color("gray"),
+            font=pg.font.Font(None, int(MenuScreen.font_size / 2)),
+        )
+
+
+class Social(WidgetsGroup):
+    def __init__(self, parent: MenuScreen):
+        super(Social, self).__init__(
+            parent,
+            x=lambda obj: parent.resolution[0] - obj.rect.width,
+            y=0,
+            width=int(parent.resolution[0] * 0.2),
+            height=parent.resolution[1],
+            border_color=pg.Color("red"),
+            border_width=5,
+        )
+
+        self.user = UserWidget(self, y=0, user=parent.network_client.user)
+        self.line = Line(
+            self,
+            x=0,
+            y=self.user.rect.bottom,
+            width=self.rect.width,
+            height=5,
+            color=pg.Color("red"),
+        )
+
+        self.friends_label = Label(
+            self,
+            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            y=self.line.rect.botom,
+            text="Друзья",
+            color=pg.Color("red"),
+            font=pg.font.Font(None, int(MenuScreen.font_size * 0.8)),
+        )
+
+        self.friends = [...]
+
+
 class MenuScreen(Group):
     resolution = Resolution.converter(os.environ["resolution"])
     font_size = 20
 
-    def __init__(self):
+    def __init__(self, network_client: NetworkClient):
         super(MenuScreen, self).__init__()
+        self.network_client = network_client
+
         self.__class__.font_size = int(
             20 * (1 + ALLOWED_RESOLUTION.index(self.resolution) * 0.4)
         )  # Масштабируем размер текста в зависимости от размера окна
@@ -83,6 +161,7 @@ class MenuScreen(Group):
             self.screen = pg.display.set_mode(self.resolution)
 
         self.buttons = MenuButtons(self)
+        self.social = Social(self)
         self.setting = Settings(self)
 
         self.running = True
@@ -115,7 +194,7 @@ class MenuScreen(Group):
         )
         self.__class__.resolution = resolution
 
-        self.__init__()
+        self.__init__(self.network_client)
         self.setting.show()
 
         if ALLOWED_RESOLUTION.index(resolution) == 0:
