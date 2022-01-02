@@ -21,5 +21,5 @@ pip install -r requirements_dev.txt
 ```commandline
 venv\Scripts\activate.bat
 cd DOM
-python main.py
+python run.py
 ```
