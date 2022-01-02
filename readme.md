@@ -1,4 +1,4 @@
-# Dungeon of Masters [![Python 3.8+](https://badgen.net/badge/Python/3.10+/blue)](https://www.python.org/downloads/) [![License: MIT](https://badgen.net/badge/License/MIT/blue)](https://github.com/AlexDev-py/DOM/blob/master/LICENSE.txt)
+# Dungeon of Masters [![Python 3.10+](https://badgen.net/badge/Python/3.10+/blue)](https://www.python.org/downloads/) [![License: MIT](https://badgen.net/badge/License/MIT/blue)](https://github.com/AlexDev-py/DOM/blob/master/LICENSE.txt)
 
 ## Для разработчиков
 
