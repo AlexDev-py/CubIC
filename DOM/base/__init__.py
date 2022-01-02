@@ -9,5 +9,6 @@ from .widgets import (
     PasswordInputLine,
     WidgetsGroup,
     Label,
+    Line,
     Text,
 )
