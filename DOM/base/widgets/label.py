@@ -83,14 +83,22 @@ class Label(BaseWidget):
             0,
             self.padding * 2
             + (
-                self._rendered_text.get_width()
+                (
+                    self._rendered_text.get_width()
+                    if self.text
+                    else self.sprite.get_width()
+                )
                 if self.width is None or isfunction(self._width)
                 else self.width
             )
             + self.border_width * 2,
             self.padding * 2
             + (
-                self._rendered_text.get_height()
+                (
+                    self._rendered_text.get_height()
+                    if self.text
+                    else self.sprite.get_height()
+                )
                 if self.height is None or isfunction(self._height)
                 else self.height
             )
