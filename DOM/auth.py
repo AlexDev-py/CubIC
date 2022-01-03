@@ -12,8 +12,7 @@ import typing as ty
 import pygame as pg
 
 from base import Group, Alert, Text, Button, Label, WidgetsGroup, InputBox
-from base.text_filters import LengthTextFilter, AlphabetTextFilter
-from utils import FinishStatus, check_password
+from utils import FinishStatus, check_password, NickTextFilter
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -143,10 +142,7 @@ class Signup(WidgetsGroup):
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
-            text_filter=LengthTextFilter(30)
-            & AlphabetTextFilter(
-                ["_", "-"], nums=True, eng=True, rus=True, ignore_case=True
-            ),
+            text_filter=NickTextFilter,
         )
 
         self.password = InputBox(

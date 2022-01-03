@@ -9,6 +9,12 @@ import os
 import pygame as pg
 from loguru import logger
 
+from base.text_filters import LengthTextFilter, AlphabetTextFilter
+
+NickTextFilter = LengthTextFilter(35) & AlphabetTextFilter(
+    ["-", "_"], nums=True, eng=True, rus=True, ignore_case=True
+)
+
 
 class FinishStatus:
     """
