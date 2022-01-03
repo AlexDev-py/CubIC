@@ -48,6 +48,7 @@ class Thread:
         kwargs: dict[str, ...] = None,
         callback: ty.Callable[[Response], ty.Any] = None,
         repetitive: True | False = False,
+        timeout: int = 1,
     ):
         """
         Менеджер дополнительного потока.
@@ -61,7 +62,8 @@ class Thread:
          после завершения работы основной функции.
         :type callback: Функция принимающая строго 1 позиционный аргумент
          и возвращающая любое значение.
-        :param repetitive: True - Задание будет повторяться каждые <_sleeping> секунд.
+        :param repetitive: True - Задание будет повторяться каждые <timeout> секунд.
+        :param timeout: Раз в сколько секунд будет выполняться задание.
         """
         logger.opt(colors=True).trace(
             "Создано новое задание "
@@ -76,12 +78,18 @@ class Thread:
         self.kwargs = kwargs or {}
         self.callback = callback
         self.repetitive = repetitive
+        self.timeout = timeout
+
+        self._last_start = 0
 
     @classmethod
     def _worker(cls) -> ty.NoReturn:
         # Основной цикл потока.
         while cls._running:
             for worker in cls._workers.copy():
+                if worker.repetitive:
+                    if worker._last_start + worker.timeout > int(time.time()):
+                        continue
                 try:
                     response = worker.worker(*worker.args, **worker.kwargs)
                     if worker.callback:
@@ -96,6 +104,8 @@ class Thread:
                     logger.opt(colors=True).trace(
                         f"Задание <c>{worker.worker}</c> выполнено"
                     )
+                else:
+                    worker._last_start = int(time.time())
             time.sleep(cls._sleeping)
 
     def run(self) -> None:
