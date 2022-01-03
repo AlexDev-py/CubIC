@@ -9,6 +9,7 @@ import os
 import pygame as pg
 from loguru import logger
 
+from base import Alert, Text, Button
 from base.text_filters import LengthTextFilter, AlphabetTextFilter
 
 NickTextFilter = LengthTextFilter(35) & AlphabetTextFilter(
@@ -62,3 +63,48 @@ def load_image(
         image = image.convert_alpha()
 
     return image
+
+
+class InfoAlert(Alert):
+    """
+    Виджет, для отображения ошибки авторизации.
+    """
+
+    def __init__(self, parent, parent_size: tuple[int, int], width: int):
+        super(InfoAlert, self).__init__(
+            parent,
+            parent_size=parent_size,
+            width=width,
+            padding=20,
+            background=pg.Color("black"),
+            fogging=100,
+        )
+
+        self._text = Text(
+            self,
+            x=0,
+            y=0,
+            width=self.rect.width - self.padding * 2,
+            text="",
+            color=pg.Color("red"),
+            font=pg.font.Font(None, 30),
+            soft_split=True,
+        )
+
+        self.continue_button = Button(
+            self,
+            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            y=lambda obj: self._text.rect.bottom + 20,
+            text="ок",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("#171717"),
+            font=pg.font.Font(None, 25),
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: self.hide(),
+        )
+
+    def show_message(self, text: str) -> None:
+        self._text.text = text
+        self.show()

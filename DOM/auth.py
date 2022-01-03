@@ -11,8 +11,8 @@ import typing as ty
 
 import pygame as pg
 
-from base import Group, Alert, Text, Button, Label, WidgetsGroup, InputBox
-from utils import FinishStatus, check_password, NickTextFilter
+from base import Group, Button, Label, WidgetsGroup, InputBox
+from utils import FinishStatus, check_password, NickTextFilter, InfoAlert
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -107,7 +107,7 @@ class Login(WidgetsGroup):
             username=login,
             password=password,
             success_callback=lambda: parent.auth(login, password),
-            fail_callback=lambda msg: (parent.error_alert.show_error(msg)),
+            fail_callback=lambda msg: (parent.error_alert.show_message(msg)),
         )
 
 
@@ -214,10 +214,10 @@ class Signup(WidgetsGroup):
             self.password2.input_line.active = True
             return
         if password != password2:
-            parent.error_alert.show_error("Пароли не совпадают")
+            parent.error_alert.show_message("Пароли не совпадают")
             return
         if not check_password(password):
-            parent.error_alert.show_error("Пароль слишком легкий")
+            parent.error_alert.show_message("Пароль слишком легкий")
             return
 
         self.disable()
@@ -225,52 +225,8 @@ class Signup(WidgetsGroup):
             username=login,
             password=password,
             success_callback=lambda: parent.auth(login, password),
-            fail_callback=lambda msg: (parent.error_alert.show_error(msg)),
+            fail_callback=lambda msg: (parent.error_alert.show_message(msg)),
         )
-
-
-class ErrorAlert(Alert):
-    """
-    Виджет, для отображения ошибки авторизации.
-    """
-
-    def __init__(self, parent: AuthScreen):
-        super(ErrorAlert, self).__init__(
-            parent,
-            parent_size=parent.SIZE,
-            padding=20,
-            background=pg.Color("black"),
-            fogging=100,
-        )
-
-        self._text = Text(
-            self,
-            x=0,
-            y=0,
-            width=int(parent.SIZE[0] * 0.9),
-            text="err",
-            color=pg.Color("red"),
-            font=pg.font.Font(None, 30),
-            soft_split=True,
-        )
-
-        self.continue_button = Button(
-            self,
-            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
-            y=lambda obj: self._text.rect.bottom + 20,
-            text="ок",
-            padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, 25),
-            border_color=pg.Color("red"),
-            border_width=2,
-            callback=lambda event: self.hide(),
-        )
-
-    def show_error(self, text: str) -> None:
-        self._text.text = text
-        self.show()
 
 
 class AuthScreen(Group):
@@ -288,9 +244,9 @@ class AuthScreen(Group):
         self.signup_group = Signup(self)
         self.show_login_group()
 
-        self.error_alert = ErrorAlert(self)
+        self.error_alert = InfoAlert(self, self.SIZE, int(self.SIZE[0] * 0.9))
         if error:
-            self.error_alert.show_error(error)
+            self.error_alert.show_message(error)
 
         self.running = True
         self.finish_status: str = FinishStatus.close
