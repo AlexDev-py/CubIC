@@ -4,15 +4,22 @@
 
 """
 
+from __future__ import annotations
+
 import os
+import typing as ty
 
 import pygame as pg
 from loguru import logger
 
-from base import Alert, Text, Button
+from base import Alert, Text, Button, WidgetsGroup
 from base.text_filters import LengthTextFilter, AlphabetTextFilter
+from database.field_types import Resolution
 
-NickTextFilter = LengthTextFilter(35) & AlphabetTextFilter(
+if ty.TYPE_CHECKING:
+    from base.types import CordFunction
+
+NickTextFilter = LengthTextFilter(15) & AlphabetTextFilter(
     ["-", "_"], nums=True, eng=True, rus=True, ignore_case=True
 )
 
@@ -77,6 +84,8 @@ class InfoAlert(Alert):
             width=width,
             padding=20,
             background=pg.Color("black"),
+            border_color=pg.Color("red"),
+            border_width=3,
             fogging=100,
         )
 
@@ -85,7 +94,7 @@ class InfoAlert(Alert):
             x=0,
             y=0,
             width=self.rect.width - self.padding * 2,
-            text="",
+            text="...",
             color=pg.Color("red"),
             font=pg.font.Font(None, 30),
             soft_split=True,
@@ -108,3 +117,80 @@ class InfoAlert(Alert):
     def show_message(self, text: str) -> None:
         self._text.text = text
         self.show()
+
+
+class DropMenu(WidgetsGroup):
+    def __init__(
+        self,
+        parent: WidgetsGroup,
+        *,
+        width: int | CordFunction | None = None,
+        height: int | CordFunction | None = None,
+        padding: int = 0,
+        background: pg.Color | None = None,
+        border_color: pg.Color = pg.Color(255, 255, 255),
+        border_width: int = 0,
+    ):
+        """
+        Виджет однострочного текста.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param width: Ширина виджета.
+        :type width: Число или функция вычисляющая ширину.
+        :param height: Высота виджета.
+        :type height: Число или функция вычисляющая высоту.
+        :param padding: Отступы от границ виджета.
+        :param background: Цвет фона.
+        :param border_color: Цвет обводки виджета.
+        :param border_width: Ширина обводки.
+        """
+
+        _parent = parent.parent
+        while _parent.parent is not None:
+            _parent = _parent.parent
+
+        self._widget = parent
+
+        super(DropMenu, self).__init__(
+            _parent,
+            x=0,
+            y=0,
+            width=width,
+            height=height,
+            padding=padding,
+            background=background,
+            border_color=border_color,
+            border_width=border_width,
+            hidden=True,
+        )
+        self.hide()
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        super(DropMenu, self).handle_event(event)
+        if event.type == pg.MOUSEBUTTONDOWN:
+            if event.button == pg.BUTTON_RIGHT:
+                if self._widget.get_global_rect().collidepoint(event.pos):
+                    self.open(event.pos)
+                    return
+            if hasattr(event, "pos"):
+                if self.enabled:
+                    if not self.rect.collidepoint(event.pos):
+                        self.hide()
+
+    def open(self, pos: tuple[int, int]) -> None:
+        resolution = Resolution.converter(os.environ["resolution"])
+        x, y = pos
+        if x + self.rect.width > resolution.width:
+            x -= self.rect.width
+        if y + self.rect.height > resolution.height:
+            y -= self.rect.height
+
+        self.x = x
+        self.y = y
+
+        self.show()
+        self.enable()
+
+    def hide(self) -> None:
+        super(DropMenu, self).hide()
+        self.disable()
