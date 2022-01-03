@@ -5,6 +5,7 @@ from .thread import Thread
 from .widgets import (
     Alert,
     Button,
+    InputBox,
     InputLine,
     PasswordInputLine,
     WidgetsGroup,
