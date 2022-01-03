@@ -85,7 +85,7 @@ class Label(BaseWidget):
             + (
                 (
                     self._rendered_text.get_width()
-                    if self.text
+                    if self.text is not None
                     else self.sprite.get_width()
                 )
                 if self.width is None or isfunction(self._width)
@@ -96,7 +96,7 @@ class Label(BaseWidget):
             + (
                 (
                     self._rendered_text.get_height()
-                    if self.text
+                    if self.text is not None
                     else self.sprite.get_height()
                 )
                 if self.height is None or isfunction(self._height)
