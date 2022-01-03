@@ -6,31 +6,35 @@
 
 from __future__ import annotations
 
+import os
 import typing as ty
 
 import pygame as pg
+from loguru import logger
 
 from base import Button, WidgetsGroup, Alert, Label
 from base.events import ButtonClickEvent
-from database.field_types import ALLOWED_RESOLUTION
+from database import Config
+from database.field_types import ALLOWED_RESOLUTION, Resolution
 
 if ty.TYPE_CHECKING:
-    from menu import MenuScreen
+    from base.group import Group
 
 
 class Settings(Alert):
-    def __init__(self, parent: MenuScreen):
+    def __init__(self, parent: Group):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+
         super(Settings, self).__init__(
             parent,
-            parent_size=parent.resolution,
-            width=int(parent.resolution[0] * 0.6),
-            height=int(parent.resolution[1] * 0.8),
+            parent_size=resolution,
+            width=int(resolution.width * 0.6),
+            height=int(resolution.height * 0.8),
             padding=20,
             background=pg.Color("black"),
             fogging=100,
         )
-
-        self._parent = parent
 
         self.exit_btn = Button(
             self,
@@ -40,17 +44,14 @@ class Settings(Alert):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, int(parent.font_size * 0.7)),
+            font=pg.font.Font(None, int(font_size * 0.7)),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
 
         self.resolution_setting = ResolutionSetting(
-            self,
-            y=self.exit_btn.rect.bottom + 30,
-            font_size=parent.font_size,
-            resolution=str(parent.resolution),
+            self, y=self.exit_btn.rect.bottom + 30
         )
 
         self.parent.update()
@@ -59,17 +60,38 @@ class Settings(Alert):
         super(Settings, self).handle_event(event)
         if event.type == ButtonClickEvent.type:
             if event.obj == self.resolution_setting.btn_low:
-                self._parent.change_resolution(
+                self.change_resolution(
                     ALLOWED_RESOLUTION[
-                        ALLOWED_RESOLUTION.index(self._parent.resolution) - 1
+                        ALLOWED_RESOLUTION.index(
+                            Resolution.converter(os.environ["resolution"])
+                        )
+                        - 1
                     ]
                 )
             elif event.obj == self.resolution_setting.btn_up:
-                self._parent.change_resolution(
+                self.change_resolution(
                     ALLOWED_RESOLUTION[
-                        ALLOWED_RESOLUTION.index(self._parent.resolution) + 1
+                        ALLOWED_RESOLUTION.index(
+                            Resolution.converter(os.environ["resolution"])
+                        )
+                        + 1
                     ]
                 )
+
+    def change_resolution(self, resolution: Resolution) -> None:
+        """
+        Изменяет разрешение окна.
+        :param resolution: Новое разрешение.
+        """
+        logger.opt(colors=True).debug(
+            "Изменение разрешения "
+            f"<y>{str(Resolution.converter(os.environ['resolution']))}</y> "
+            f"-> <c>{str(resolution)}</c>"
+        )
+        Config.update(resolution=resolution)
+        self._tab.parent.__class__.resolution = resolution
+
+        self._tab.parent.__init__()
 
 
 class ResolutionSetting(WidgetsGroup):
@@ -77,7 +99,10 @@ class ResolutionSetting(WidgetsGroup):
     Настройки разрешения.
     """
 
-    def __init__(self, parent: Settings, y: int, font_size: int, resolution: str):
+    def __init__(self, parent: Settings, y: int):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+
         super(ResolutionSetting, self).__init__(parent, x=0, y=y)
 
         self.label = Label(
@@ -123,3 +148,10 @@ class ResolutionSetting(WidgetsGroup):
             border_color=pg.Color("red"),
             border_width=2,
         )
+
+        if ALLOWED_RESOLUTION.index(resolution) == 0:
+            self.btn_low.disable()
+            self.btn_low.hide()
+        elif ALLOWED_RESOLUTION.index(resolution) == len(ALLOWED_RESOLUTION) - 1:
+            self.btn_up.disable()
+            self.btn_up.hide()

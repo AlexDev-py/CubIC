@@ -45,9 +45,6 @@ class Group(Object, ABC):
         """
         if obj in self._widgets:
             self._widgets.remove(obj)
-        self.update()  # Обновляем группу
-        if self.parent:
-            self.parent.update()
 
     def update(self, *args, **kwargs) -> None:
         """

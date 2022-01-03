@@ -24,7 +24,7 @@ os.environ["AUTH_PATH"] = os.path.join(os.environ["APP_DIR"], ".auth")
 os.environ["VERSION"] = "0.0.0"
 # Сервер
 # os.environ["HOST"] = "http://127.0.0.1:5000"
-os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com/"
+os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
 
 pygame.init()
 
