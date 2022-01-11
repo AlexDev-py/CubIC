@@ -18,6 +18,7 @@ from database.field_types import Resolution
 
 if ty.TYPE_CHECKING:
     from base.types import CordFunction
+    from base.group import Group
 
 NickTextFilter = LengthTextFilter(15) & AlphabetTextFilter(
     ["-", "_"], nums=True, eng=True, rus=True, ignore_case=True
@@ -37,6 +38,10 @@ class FinishStatus:
 
     @classmethod
     def set_msg(cls, msg: str) -> None:
+        """
+        Изменяет сообщение.
+        :param msg: Новое сообщение.
+        """
         cls.fail_msg = msg
 
 
@@ -74,10 +79,18 @@ def load_image(
 
 class InfoAlert(Alert):
     """
-    Виджет, для отображения ошибки авторизации.
+    Информационный виджет.
+    Текст и кнопка "ок", закрывающая сообщение.
     """
 
-    def __init__(self, parent, parent_size: tuple[int, int], width: int):
+    def __init__(self, parent: Group, parent_size: tuple[int, int], width: int):
+        """
+        Виджет, отображающий информационное сообщение.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param parent_size: Размеры родительского виджета.
+        :param width: Ширина информационного виджета.
+        """
         super(InfoAlert, self).__init__(
             parent,
             parent_size=parent_size,
@@ -115,6 +128,10 @@ class InfoAlert(Alert):
         )
 
     def show_message(self, text: str) -> None:
+        """
+        Изменяет текст и показывает виджет.
+        :param text: Текст сообщения.
+        """
         self._text.text = text
         self.show()
 
@@ -132,9 +149,10 @@ class DropMenu(WidgetsGroup):
         border_width: int = 0,
     ):
         """
-        Виджет однострочного текста.
+        Выпадающий виджет.
+        Активируется по нажатию правой кнопкой мыши по определенному виджету.
         :param parent: Объект к которому принадлежит виджет.
-        :type parent: Объект класса, родителем которого является Group.
+        :type parent: Объект класса, родителем которого является WidgetsGroup.
         :param width: Ширина виджета.
         :type width: Число или функция вычисляющая ширину.
         :param height: Высота виджета.
@@ -145,6 +163,7 @@ class DropMenu(WidgetsGroup):
         :param border_width: Ширина обводки.
         """
 
+        # Получаем исходного родителя
         _parent = parent.parent
         while _parent.parent is not None:
             _parent = _parent.parent
@@ -163,22 +182,31 @@ class DropMenu(WidgetsGroup):
             border_width=border_width,
             hidden=True,
         )
+
         self.hide()
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(DropMenu, self).handle_event(event)
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == pg.BUTTON_RIGHT:
+                # Открываем виджет
                 if self._widget.get_global_rect().collidepoint(event.pos):
                     self.open(event.pos)
                     return
+            # Скрываем виджет
             if hasattr(event, "pos"):
                 if self.enabled:
                     if not self.rect.collidepoint(event.pos):
                         self.hide()
 
     def open(self, pos: tuple[int, int]) -> None:
-        resolution = Resolution.converter(os.environ["resolution"])
+        """
+        Открывает меню в определенной позиции.
+        :param pos: Координаты меню.
+        """
+        resolution = Resolution.converter(os.environ["resolution"])  # Разрешение окна
+
+        # Смещаем меню, если оно не вмещается
         x, y = pos
         if x + self.rect.width > resolution.width:
             x -= self.rect.width
@@ -188,9 +216,12 @@ class DropMenu(WidgetsGroup):
         self.x = x
         self.y = y
 
-        self.show()
-        self.enable()
+        self.show()  # Показываем
+        self.enable()  # Активируем
 
     def hide(self) -> None:
+        """
+        Скрывает и деактивирует меню.
+        """
         super(DropMenu, self).hide()
         self.disable()

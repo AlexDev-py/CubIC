@@ -1,3 +1,13 @@
+"""
+
+Интерфейсы взаимодействия с игровым сообществом.
+Интерфейс списка друзей.
+Интерфейс меню запросов в друзья.
+
+Реализует функциональность системы друзей.
+
+"""
+
 from __future__ import annotations
 
 import os
@@ -28,7 +38,13 @@ if ty.TYPE_CHECKING:
 
 class FriendDropMenu(DropMenu):
     def __init__(self, parent: UserWidget, can_invite: ty.Callable[[], True | False]):
-        font_size = int(os.environ["font_size"])
+        """
+        Выпадающее меню для виджета друга.
+        :param parent: ...
+        :param can_invite: Может ли пользователь пригласить этого друга в группу.
+        :type can_invite: Функция, которая возвращает True или False.
+        """
+        font_size = int(os.environ["font_size"])  # Размер текста
 
         self.can_invite = can_invite
 
@@ -39,7 +55,7 @@ class FriendDropMenu(DropMenu):
             border_width=2,
         )
 
-        self.delete_friend = Button(
+        self.delete_friend_button = Button(
             self,
             x=0,
             y=0,
@@ -53,7 +69,7 @@ class FriendDropMenu(DropMenu):
         self.send_invite_button = Button(
             self,
             x=0,
-            y=self.delete_friend.rect.bottom,
+            y=self.delete_friend_button.rect.bottom,
             text="Пригласить в группу",
             padding=5,
             color=pg.Color("red"),
@@ -62,10 +78,15 @@ class FriendDropMenu(DropMenu):
         )
 
     def show(self) -> None:
+        """
+        Модифицирует базовый метод show.
+        Отображает или скрывает кнопку "Пригласить в группу" если нужно.
+        """
         self.remove(self.send_invite_button)
         if self.can_invite():
             self.add(self.send_invite_button)
         self.parent.update()
+
         super(FriendDropMenu, self).show()
 
 
@@ -80,6 +101,20 @@ class UserWidget(WidgetsGroup):
         font_size: int | None = None,
         width: int | None = None,
     ):
+        """
+        Виджет пользователя.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param x: Координата x.
+        :type x: Число или функция вычисляющая координату.
+        :param y: Координата y.
+        :type y: Число или функция вычисляющая координату.
+        :param user: Объект пользователя.
+        :param icon_size: Размер иконки пользователя.
+        :param font_size: Размер текста.
+        :param width: Ширина виджета.
+        :type width: Число или функция вычисляющая ширину.
+        """
         font_size = font_size or int(os.environ["font_size"])
         icon_size = icon_size or int(os.environ["icon_size"])
 
@@ -126,6 +161,10 @@ class UserWidget(WidgetsGroup):
         )
 
     def set_status(self, status: UserStatus) -> None:
+        """
+        Изменяет статус пользователя.
+        :param status: Новый статус.
+        """
         self.status.text = status.text
         self.status.color = status.color
 
@@ -137,6 +176,14 @@ class FriendWidget(UserWidget):
         y: int | CordFunction,
         user: User,
     ):
+        """
+        Виджет друга.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param y: Координата y.
+        :type y: Число или функция вычисляющая координату.
+        :param user: Объект пользователя.
+        """
         font_size = int(int(os.environ["font_size"]) * 0.7)
 
         self.social = parent
@@ -149,22 +196,26 @@ class FriendWidget(UserWidget):
             self, can_invite=lambda: parent.network_client.room is not ...
         )
 
-    def delete(self):
+    def delete(self) -> None:
+        """
+        Удаляет виджет.
+        """
         self.parent.remove(self)
         self.drop_menu.parent.remove(self.drop_menu)
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(FriendWidget, self).handle_event(event)
         if event.type == ButtonClickEvent.type:
-            if event.obj == self.drop_menu.delete_friend:
+            # Обработка нажатий на кнопки в выпадающем меню
+            if event.obj == self.drop_menu.delete_friend_button:
                 self.social.network_client.delete_friend(uid=self.user.uid)
-                self.drop_menu.hide()
+                self.drop_menu.hide()  # Скрываем меню
             elif event.obj == self.drop_menu.send_invite_button:
                 self.social.network_client.send_invite(
                     self.user,
                     fail_callback=lambda msg: self.social.info_alert.show_message(msg),
                 )
-                self.drop_menu.hide()
+                self.drop_menu.hide()  # Скрываем меню
 
 
 class FriendRequestWidget(UserWidget):
@@ -176,6 +227,17 @@ class FriendRequestWidget(UserWidget):
         user: User,
         callback: ty.Callable[[ty.Literal["ok", "cancel"], FriendRequestWidget], ...],
     ):
+        """
+        Виджет запроса в друзья.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param y: Координата y.
+        :type y: Число или функция вычисляющая координату.
+        :param user: Объект пользователя.
+        :param callback: Обработчик нажатия на кнопки.
+        :type callback: Функция, принимающая действие: "ok" или "cancel"
+            и объект этого виджета.
+        """
         font_size = int(os.environ["font_size"])
 
         super(FriendRequestWidget, self).__init__(
@@ -213,6 +275,12 @@ class FriendRequestWidget(UserWidget):
 
 class FriendRequests(Alert):
     def __init__(self, parent: Group, network_client: NetworkClient):
+        """
+        Меню запросов в друзья.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param network_client: ...
+        """
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
 
@@ -232,7 +300,7 @@ class FriendRequests(Alert):
             parent, parent_size=resolution, width=int(resolution.width * 0.5)
         )
 
-        self.exit_btn = Button(
+        self.exit_button = Button(
             self,
             x=0,
             y=0,
@@ -302,12 +370,16 @@ class FriendRequests(Alert):
         self.friend_requests = []
 
     def send_request(self) -> None:
+        """
+        Отправка запроса в друзья.
+        """
+        # Проверка наличия текста в поле ввода
         if not (username := self.username_input.input_line.text.strip()):
             self.username_input.input_line.active = True
             return
 
-        self.disable()
-        self.username_input.input_line.text = ""
+        self.disable()  # Временно отключаем работоспособность виджета
+        self.username_input.input_line.text = ""  # Очищаем поле ввода
         self.network_client.send_friend_request(
             username,
             success_callback=lambda: (
@@ -318,23 +390,36 @@ class FriendRequests(Alert):
                 self.info_alert.show_message(msg),
                 self.enable(),
             ),
-        )
+        )  # Отправляем запрос
 
     def manage_friend_request(
         self, status: ty.Literal["ok", "cancel"], widget: FriendRequestWidget
     ) -> None:
+        """
+        Принимает или отклоняет запрос дружбы.
+        :param status: Вердикт пользователя.
+        :param widget: Виджет запроса.
+        """
         if status == "ok":
             self.add_friend(widget)
         elif status == "cancel":
             self.delete_friend_request(widget)
 
     def add_friend(self, widget: FriendRequestWidget) -> None:
+        """
+        Добавляет пользователя в друзья.
+        :param widget: Виджет запроса.
+        """
         self.remove(widget)
         self.friend_requests.remove(widget)
         self.parent.update()
         self.network_client.add_friend(uid=widget.user.uid)
 
     def delete_friend_request(self, widget: FriendRequestWidget) -> None:
+        """
+        Отклоняет запрос.
+        :param widget: Виджет запроса.
+        """
         self.remove(widget),
         self.friend_requests.remove(widget)
         self.parent.update()
@@ -343,6 +428,12 @@ class FriendRequests(Alert):
 
 class Social(WidgetsGroup):
     def __init__(self, parent: Group, network_client: NetworkClient):
+        """
+        Виджет игрового сообщества.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param network_client: ...
+        """
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
@@ -360,14 +451,14 @@ class Social(WidgetsGroup):
         self.network_client = network_client
         self.friend_requests = FriendRequests(parent, network_client)
 
-        self.user = UserWidget(
+        self.user_widget = UserWidget(
             self, x=0, y=0, user=network_client.user, icon_size=int(icon_size * 1.2)
         )
 
         self.line = Line(
             self,
             x=0,
-            y=self.user.rect.bottom,
+            y=self.user_widget.rect.bottom,
             width=self.rect.width,
             height=5,
             color=pg.Color("red"),
@@ -399,15 +490,21 @@ class Social(WidgetsGroup):
 
         self.friends: list[FriendWidget] = []
 
+        # Подключаем обработчики событий сообщества
         network_client.on_delete_friend(callback=self.on_delete_friend)
         network_client.on_add_friend(callback=self.on_add_friend)
         network_client.on_change_user_status(callback=self.on_change_user_status)
         network_client.on_friend_request(callback=self.on_friend_request)
 
+        # Обновляем список друзей и запросов в отдельном потоке
         Thread(worker=self.load_friends).run()
         Thread(worker=self.load_friend_requests).run()
 
     def on_delete_friend(self, user: User) -> None:
+        """
+        Удаление друга.
+        :param user: Пользователь.
+        """
         widget = [friend for friend in self.friends if friend.user.uid == user.uid][0]
         widget.delete()
         self.friends.remove(widget)
@@ -415,6 +512,10 @@ class Social(WidgetsGroup):
         self.parent.update()
 
     def on_add_friend(self, user: User) -> None:
+        """
+        Добавление друга.
+        :param user: Пользователь.
+        """
         y = (
             self.social_label.rect.bottom
             if not len(self.friends)
@@ -423,8 +524,12 @@ class Social(WidgetsGroup):
         self.friends.append(FriendWidget(self, y=y, user=user))
 
     def on_change_user_status(self, user: User) -> None:
-        if user.uid == self.network_client.user.uid:
-            widget = self.user
+        """
+        Изменение статуса пользователя.
+        :param user: Пользователь.
+        """
+        if user.uid == self.network_client.user.uid:  # Если это текущий пользователь
+            widget = self.user_widget
         else:
             widget = [friend for friend in self.friends if friend.user.uid == user.uid]
             if not len(widget):
@@ -433,9 +538,15 @@ class Social(WidgetsGroup):
         widget.set_status(user.status)
 
     def on_friend_request(self) -> None:
+        """
+        Запрос в друзья.
+        """
         self.load_friend_requests()
 
     def load_friends(self) -> None:
+        """
+        Обновляет список друзей.
+        """
         self.network_client.update_user()
 
         logger.opt(colors=True).trace(
@@ -465,14 +576,17 @@ class Social(WidgetsGroup):
                             if obj in self.friends
                             else 0
                         )
-                    ),
+                    ),  # Динамическая координата Y
                     user=user,
                 )
             )
 
         self.parent.update()
 
-    def load_friend_requests(self):
+    def load_friend_requests(self) -> None:
+        """
+        Обновляет список запросов в друзья.
+        """
         self.network_client.update_user()
 
         logger.opt(colors=True).trace(
