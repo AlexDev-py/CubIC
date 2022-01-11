@@ -26,7 +26,7 @@ if ty.TYPE_CHECKING:
 
 
 class FriendDropMenu(DropMenu):
-    def __init__(self, parent: UserWidget):
+    def __init__(self, parent: UserWidget, can_invite: True | False):
         font_size = int(os.environ["font_size"])
 
         super(FriendDropMenu, self).__init__(
@@ -45,6 +45,21 @@ class FriendDropMenu(DropMenu):
             color=pg.Color("red"),
             active_background=pg.Color("black"),
             font=pg.font.Font(None, int(font_size * 0.6)),
+        )
+
+        self.send_invite_button = (
+            Button(
+                self,
+                x=0,
+                y=self.delete_friend.rect.bottom,
+                text="Пригласить в группу",
+                padding=5,
+                color=pg.Color("red"),
+                active_background=pg.Color("black"),
+                font=pg.font.Font(None, int(font_size * 0.6)),
+            )
+            if can_invite
+            else ...
         )
 
 
@@ -112,15 +127,17 @@ class FriendWidget(UserWidget):
         y: int,
         user: User,
         font_size: int,
-        delete_friend: ty.Callable[[FriendWidget], ...],
     ):
         font_size = font_size or int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
 
+        self.social = parent
+
         super(FriendWidget, self).__init__(parent, x, y, user, icon_size, font_size)
 
-        self.delete_friend = delete_friend
-        self.drop_menu = FriendDropMenu(self)
+        self.drop_menu = FriendDropMenu(
+            self, can_invite=parent.network_client.room is not ...
+        )
 
     def delete(self):
         self.parent.remove(self)
@@ -130,7 +147,12 @@ class FriendWidget(UserWidget):
         super(FriendWidget, self).handle_event(event)
         if event.type == ButtonClickEvent.type:
             if event.obj == self.drop_menu.delete_friend:
-                self.delete_friend(self)
+                self.social.delete_friend(self)
+            elif event.obj == self.drop_menu.send_invite_button:
+                self.social.network_client.send_invite(
+                    self.user,
+                    fail_callback=lambda msg: self.social.info_alert.show_message(msg),
+                )
 
 
 class FriendRequestWidget(UserWidget):
@@ -375,6 +397,10 @@ class Social(WidgetsGroup):
             callback=lambda event: self.friend_requests.show(),
         )
 
+        self.info_alert = InfoAlert(
+            parent, parent_size=resolution, width=int(resolution.width * 0.5)
+        )
+
         self.friends: list[FriendWidget] = []
 
         if self.thread is ...:
@@ -417,14 +443,7 @@ class Social(WidgetsGroup):
         y = self.social_label.rect.bottom + 10
         for user in friends:
             self.friends.append(
-                FriendWidget(
-                    self,
-                    x=0,
-                    y=y,
-                    user=user,
-                    font_size=int(font_size * 0.7),
-                    delete_friend=self.delete_friend,
-                )
+                FriendWidget(self, x=0, y=y, user=user, font_size=int(font_size * 0.7))
             )
             y += self.friends[-1].rect.height
 

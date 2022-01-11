@@ -15,6 +15,8 @@ import requests
 import socketio  # noqa
 from loguru import logger
 
+from game import Room
+
 
 class UserStatus(ty.NamedTuple):
     text: str
@@ -40,6 +42,8 @@ class User:
         elif self.status == 1:
             self.status = UserStatus("В сети", "green")
         elif self.status == 2:
+            self.status = UserStatus("В лобби", "#0ACBE6")
+        elif self.status == 3:
             self.status = UserStatus("Играет", "#0ACBE6")
 
 
@@ -48,7 +52,7 @@ class NetworkClient:
 
     def __init__(self):
         self.user: User = ...
-        self.room_id: int = ...
+        self.room: Room = ...
 
     def init(self) -> None:
         """
@@ -56,7 +60,13 @@ class NetworkClient:
         """
         logger.debug(f"Подключение к серверу: {os.environ['HOST']}")
         self.__class__.sio.connect(os.environ["HOST"], wait_timeout=5)
-        atexit.register(self.__class__.sio.disconnect)
+        atexit.register(self.disconnect)
+
+    def disconnect(self):
+        if self.room is not ...:
+            self.leave_lobby(lambda: self.__class__.sio.disconnect())
+        else:
+            self.__class__.sio.disconnect()
 
     # ===== LOGIN =====
 
@@ -208,22 +218,22 @@ class NetworkClient:
     def _on_create_lobby(
         self, response: dict[str, int], callback: ty.Callable[[], ...]
     ) -> None:
-        self.room_id = response.get("room_id", ...)
-        if self.room_id is not ...:
-            logger.opt(colors=True).info(f"Создана комната <y>{self.room_id}</y>")
-            callback()
+        self.room = Room(response["room_id"])
+        self.room.join(self.user, is_owner=True)
+        logger.opt(colors=True).info(f"Создана комната <y>{self.room.room_id}</y>")
+        callback()
 
     # === LOBBY INVITES ===
 
     def send_invite(self, user: User, fail_callback: ty.Callable[[str], ...]) -> None:
-        if self.room_id is not ...:
+        if self.room is not ...:
             self.sio.on(
                 "send invite",
                 lambda response: fail_callback(response.get("msg", "Ошибка")),
             )
             self.sio.emit(
                 "send invite",
-                dict(uid=user.uid, room_id=self.room_id),
+                dict(uid=user.uid, room_id=self.room.room_id),
                 callback=lambda: logger.opt(colors=True).info(
                     f"Пользователю {user.username} отправлено приглашение в группу"
                 ),
@@ -231,7 +241,7 @@ class NetworkClient:
 
     def on_lobby_invite(self, callback: ty.Callable[[str, int], ...]) -> None:
         self.sio.on(
-            "lobby_invite",
+            "lobby invite",
             lambda response: (
                 callback(response.get("msg"), response.get("room_id")),
                 logger.opt(colors=True).info(
@@ -246,7 +256,7 @@ class NetworkClient:
     def join_lobby(
         self,
         room_id: int,
-        success_callback: ty.Callable[[list[User]], ...],
+        success_callback: ty.Callable[[], ...],
         fail_callback: ty.Callable[[str], ...],
     ) -> None:
         self.sio.on(
@@ -260,27 +270,30 @@ class NetworkClient:
     def _on_join_lobby(
         self,
         response: dict[str, ...],
-        success_callback: ty.Callable[[list[User]], ...],
+        success_callback: ty.Callable[[], ...],
         fail_callback: ty.Callable[[str], ...],
     ) -> None:
         if response.get("status") == "ok":
-            self.room_id = response["room_id"]
+            self.room = Room(response["room_id"])
+            for i, user in enumerate(response["users"]):
+                self.room.join(User(**user), is_owner=i == 0)
             logger.opt(colors=True).info(
-                f"Вы присоединились в лобби <y>{self.room_id}</y>"
+                f"Вы присоединились в лобби <y>{self.room.room_id}</y>"
             )
-            success_callback([User(**data) for data in response.get("users", ())])
+            success_callback()
         else:
             fail_callback(response.get("msg", "Ошибка"))
 
-    def on_joining_the_lobby(self, callback: ty.Callable[[User], ...]) -> None:
+    def on_joining_the_lobby(self, callback: ty.Callable[[], ...]) -> None:
         self.sio.on(
             "joining the lobby",
             lambda response: (
-                callback(User(**response["user"])),
+                self.room.join(User(**response["user"])),
                 logger.opt(colors=True).info(
                     f"<y>{response['user']['username']}</y> "
                     "присоединился к вашей группе"
                 ),
+                callback(),
             ),
         )
 
@@ -288,13 +301,21 @@ class NetworkClient:
 
     def leave_lobby(self, callback: ty.Callable[[], ...]) -> None:
         self.sio.emit(
-            "leave lobby", dict(room_id=self.room_id), callback=lambda *_: callback()
+            "leave lobby",
+            dict(room_id=self.room.room_id),
+            callback=lambda *_: (
+                self.__setattr__("room", ...),
+                callback(),
+            ),
         )
 
-    def on_leaving_the_lobby(self, callback: ty.Callable[[str, int], ...]) -> None:
+    def on_leaving_the_lobby(self, callback: ty.Callable[[str], ...]) -> None:
         self.sio.on(
             "leaving the lobby",
-            lambda response: callback(response["msg"], response["uid"]),
+            lambda response: (
+                self.room.leave(response["uid"]),
+                callback(response["msg"]),
+            ),
         )
 
     # ===== TOOLS =====

@@ -53,6 +53,8 @@ class Text(Label):
         :param border_width: Ширина обводки.
         :param soft_split: True - Переносит текст не разрывая слова.
         """
+
+        self._soft_split = soft_split
         super(Text, self).__init__(
             parent,
             x=x,
@@ -68,7 +70,6 @@ class Text(Label):
             border_color=border_color,
             border_width=border_width,
         )
-        self._soft_split = soft_split
 
     def _render_text(self) -> pg.Surface:
         # Разделяет текст на строки, которые не выходят за рамку родительского виджета

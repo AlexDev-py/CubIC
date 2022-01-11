@@ -6,7 +6,9 @@ import typing as ty
 import pygame as pg
 
 from base import Button, WidgetsGroup, Group
+from base.events import ButtonClickEvent
 from database.field_types import Resolution, ALLOWED_RESOLUTION
+from lobby import Lobby, LobbyInvite
 from settings_alert import Settings
 from social import Social
 from utils import InfoAlert
@@ -36,7 +38,9 @@ class MenuButtons(WidgetsGroup):
             font=pg.font.Font(None, MenuScreen.font_size),
             border_color=pg.Color("red"),
             border_width=2,
-            callback=lambda event: print("create lobby"),
+            callback=lambda event: parent.network_client.create_lobby(
+                callback=lambda: (parent.open_lobby())
+            ),
         )
 
         self.settings_button = Button(
@@ -98,6 +102,7 @@ class MenuScreen(Group):
             self.screen = pg.display.set_mode(self.resolution)
 
         self.buttons = MenuButtons(self)
+        self.lobby = Lobby(self, network_client)
         self.social = Social(self, self.network_client)
         self.setting = Settings(self)
 
@@ -108,12 +113,55 @@ class MenuScreen(Group):
         )
 
         self.running = True
+        self.lobby_invite: LobbyInvite = ...
+
+        self.network_client.on_lobby_invite(callback=self.on_lobby_invite)
+        self.network_client.on_joining_the_lobby(callback=self.lobby.init)
+        self.network_client.on_leaving_the_lobby(
+            callback=lambda msg: (self.lobby.init(), self.info_alert.show_message(msg))
+        )
+
+    def on_lobby_invite(self, msg: str, room_id: int):
+        self.lobby_invite = LobbyInvite(self.social, msg, room_id)
+
+    def open_lobby(self):
+        self.buttons.hide(),
+        self.buttons.disable(),
+        self.lobby.init(),
+        self.lobby.show(),
+        self.lobby.enable(),
 
     def exec(self) -> ty.NoReturn:
         while self.running:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.terminate()
+                elif event.type == ButtonClickEvent.type:
+                    if self.lobby_invite is not ...:
+                        if event.obj == self.lobby_invite.cancel:
+                            self.remove(self.lobby_invite)
+                            self.lobby_invite: LobbyInvite = ...
+                        elif event.obj == self.lobby_invite.accept:
+                            self.remove(self.lobby_invite)
+                            self.network_client.join_lobby(
+                                self.lobby_invite.room_id,
+                                success_callback=self.open_lobby,
+                                fail_callback=lambda msg: self.info_alert.show_message(
+                                    msg
+                                ),
+                            )
+                            self.lobby_invite: LobbyInvite = ...
+                    if self.lobby.buttons is not ...:
+                        if event.obj == self.lobby.buttons.leave_lobby_button:
+                            self.network_client.leave_lobby(
+                                callback=lambda: (
+                                    self.lobby.disable(),
+                                    self.lobby.hide(),
+                                    self.buttons.show(),
+                                    self.buttons.enable(),
+                                )
+                            )
+
                 self.handle_event(event)
             self.render()
 
