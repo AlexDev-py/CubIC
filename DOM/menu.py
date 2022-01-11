@@ -38,8 +38,11 @@ class MenuButtons(WidgetsGroup):
             font=pg.font.Font(None, MenuScreen.font_size),
             border_color=pg.Color("red"),
             border_width=2,
-            callback=lambda event: parent.network_client.create_lobby(
-                callback=lambda: (parent.open_lobby())
+            callback=lambda event: (
+                self.disable(),
+                parent.network_client.create_lobby(
+                    callback=lambda: (parent.open_lobby())
+                ),
             ),
         )
 
@@ -120,8 +123,12 @@ class MenuScreen(Group):
         self.network_client.on_leaving_the_lobby(
             callback=lambda msg: (self.lobby.init(), self.info_alert.show_message(msg))
         )
+        self.network_client.on_error(callback=self.info_alert.show_message)
 
     def on_lobby_invite(self, msg: str, room_id: int):
+        if self.lobby_invite is not ...:
+            self.remove(self.lobby_invite)
+            self.lobby_invite: LobbyInvite = ...
         self.lobby_invite = LobbyInvite(self.social, msg, room_id)
 
     def open_lobby(self):
@@ -153,14 +160,11 @@ class MenuScreen(Group):
                             self.lobby_invite: LobbyInvite = ...
                     if self.lobby.buttons is not ...:
                         if event.obj == self.lobby.buttons.leave_lobby_button:
-                            self.network_client.leave_lobby(
-                                callback=lambda: (
-                                    self.lobby.disable(),
-                                    self.lobby.hide(),
-                                    self.buttons.show(),
-                                    self.buttons.enable(),
-                                )
-                            )
+                            self.network_client.leave_lobby()
+                            self.lobby.disable()
+                            self.lobby.hide()
+                            self.buttons.show()
+                            self.buttons.enable()
 
                 self.handle_event(event)
             self.render()

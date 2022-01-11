@@ -62,12 +62,6 @@ class NetworkClient:
         self.__class__.sio.connect(os.environ["HOST"], wait_timeout=5)
         atexit.register(self.disconnect)
 
-    def disconnect(self):
-        if self.room is not ...:
-            self.leave_lobby(lambda: self.__class__.sio.disconnect())
-        else:
-            self.__class__.sio.disconnect()
-
     # ===== LOGIN =====
 
     def login(
@@ -153,57 +147,71 @@ class NetworkClient:
         fail_callback: ty.Callable[[str], ...],
     ) -> None:
         self.sio.on(
-            "friend request",
+            "send friend request",
             lambda response: (
                 (
                     lambda: (
-                        success_callback(),
                         logger.opt(colors=True).info(
                             f"Пользователю <y>{username}</y> отправлен запрос дружбы"
                         ),
+                        success_callback(),
                     )
                 )
                 if response.get("status") == "ok"
                 else (lambda: fail_callback(response.get("msg", "Ошибка")))
             )(),
         )
-        self.sio.emit("friend request", dict(username=username))
+        self.sio.emit("send friend request", dict(username=username))
 
-    def delete_friend_request(self, user: User, callback: ty.Callable[[], ...]) -> None:
+    def on_friend_request(self, callback: ty.Callable[[], ...]) -> None:
         self.sio.on(
-            "delete friend request",
-            lambda resp: (
-                callback(),
+            "friend request",
+            lambda response: (
                 logger.opt(colors=True).info(
-                    f"Запрос дружбы от <y>{user.username}</y> отклонен"
+                    f"Запрос дружбы от <y>{response['user']['username']}</y>"
                 ),
+                callback(),
             ),
         )
-        self.sio.emit("delete friend request", dict(uid=user.uid))
 
-    def add_friend(self, user: User, callback: ty.Callable[[], ...]) -> None:
+    def delete_friend_request(self, user: User) -> None:
+        self.sio.emit("delete friend request", dict(uid=user.uid))
+        logger.opt(colors=True).info(
+            f"Запрос дружбы от <y>{user.username}</y> отклонен"
+        )
+
+    def add_friend(self, uid: int) -> None:
+        self.sio.emit("add friend", dict(uid=uid))
+
+    def on_add_friend(self, callback: ty.Callable[[User], ...]) -> None:
         self.sio.on(
             "add friend",
-            lambda resp: (
-                callback(),
+            lambda response: (
                 logger.opt(colors=True).info(
-                    f"<y>{user.username}</y> добавлен в друзья"
+                    f"<y>{response['user']['username']}</y> добавлен в друзья"
                 ),
+                callback(User(**response["user"])),
             ),
         )
-        self.sio.emit("add friend", dict(uid=user.uid))
 
-    def delete_friend(self, user: User, callback: ty.Callable[[], ...]) -> None:
+    def delete_friend(self, uid: int) -> None:
+        self.sio.emit("delete friend", dict(uid=uid))
+
+    def on_delete_friend(self, callback: ty.Callable[[User], ...]) -> None:
         self.sio.on(
             "delete friend",
-            lambda resp: (
-                callback(),
+            lambda response: (
                 logger.opt(colors=True).info(
-                    f"<y>{user.username}</y> удален из друзей"
+                    f"<y>{response['user']['username']}</y> удален из друзей"
                 ),
+                callback(User(**response["user"])),
             ),
         )
-        self.sio.emit("delete friend", dict(uid=user.uid))
+
+    def on_change_user_status(self, callback: ty.Callable[[User], ...]) -> None:
+        self.sio.on(
+            "change user status", lambda response: callback(User(**response["user"]))
+        )
 
     # ===== LOBBY =====
 
@@ -243,11 +251,11 @@ class NetworkClient:
         self.sio.on(
             "lobby invite",
             lambda response: (
-                callback(response.get("msg"), response.get("room_id")),
                 logger.opt(colors=True).info(
                     f"{response.get('msg')} "
                     f"<y>room_id</y>=<c>{response.get('room_id')}</c>"
                 ),
+                callback(response.get("msg"), response.get("room_id")),
             ),
         )
 
@@ -299,15 +307,12 @@ class NetworkClient:
 
     # === LEAVING THE LOBBY ===
 
-    def leave_lobby(self, callback: ty.Callable[[], ...]) -> None:
+    def leave_lobby(self) -> None:
         self.sio.emit(
             "leave lobby",
             dict(room_id=self.room.room_id),
-            callback=lambda *_: (
-                self.__setattr__("room", ...),
-                callback(),
-            ),
         )
+        self.room: Room = ...
 
     def on_leaving_the_lobby(self, callback: ty.Callable[[str], ...]) -> None:
         self.sio.on(
@@ -320,12 +325,30 @@ class NetworkClient:
 
     # ===== TOOLS =====
 
+    def disconnect(self) -> None:
+        def _disconnect():
+            self.sio.emit("logout", callback=self.sio.disconnect)
+
+        if self.room is not ...:
+            self.sio.on("leave lobby", lambda *_: _disconnect())
+            self.leave_lobby()
+        else:
+            _disconnect()
+
+        self.sio.wait()
+
     def get_user(self, uid: int) -> User:
         response = self._send_request("user", uid=uid)
         return User(**response)
 
     def update_user(self) -> None:
         self.user = self.get_user(self.user.uid)
+
+    def on_error(self, callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on(
+            "error",
+            lambda response: (logger.error(response["msg"]), callback(response["msg"])),
+        )
 
     @staticmethod
     def _send_request(namespace, **kwargs) -> dict:

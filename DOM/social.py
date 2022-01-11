@@ -21,13 +21,16 @@ from database.field_types import Resolution
 from utils import load_image, NickTextFilter, InfoAlert, DropMenu
 
 if ty.TYPE_CHECKING:
-    from network import User, NetworkClient
+    from network import User, NetworkClient, UserStatus
     from base.group import Group
+    from base.types import CordFunction
 
 
 class FriendDropMenu(DropMenu):
-    def __init__(self, parent: UserWidget, can_invite: True | False):
+    def __init__(self, parent: UserWidget, can_invite: ty.Callable[[], True | False]):
         font_size = int(os.environ["font_size"])
+
+        self.can_invite = can_invite
 
         super(FriendDropMenu, self).__init__(
             parent,
@@ -47,35 +50,40 @@ class FriendDropMenu(DropMenu):
             font=pg.font.Font(None, int(font_size * 0.6)),
         )
 
-        self.send_invite_button = (
-            Button(
-                self,
-                x=0,
-                y=self.delete_friend.rect.bottom,
-                text="Пригласить в группу",
-                padding=5,
-                color=pg.Color("red"),
-                active_background=pg.Color("black"),
-                font=pg.font.Font(None, int(font_size * 0.6)),
-            )
-            if can_invite
-            else ...
+        self.send_invite_button = Button(
+            self,
+            x=0,
+            y=self.delete_friend.rect.bottom,
+            text="Пригласить в группу",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("black"),
+            font=pg.font.Font(None, int(font_size * 0.6)),
         )
+
+    def show(self) -> None:
+        self.remove(self.send_invite_button)
+        if self.can_invite():
+            self.add(self.send_invite_button)
+        self.parent.update()
+        super(FriendDropMenu, self).show()
 
 
 class UserWidget(WidgetsGroup):
     def __init__(
         self,
         parent: Group,
-        x: int,
-        y: int,
+        x: int | CordFunction,
+        y: int | CordFunction,
         user: User,
-        icon_size: int = None,
-        font_size: int = None,
-        width: int = None,
+        icon_size: int | None = None,
+        font_size: int | None = None,
+        width: int | None = None,
     ):
         font_size = font_size or int(os.environ["font_size"])
         icon_size = icon_size or int(os.environ["icon_size"])
+
+        self.user = user
 
         super(UserWidget, self).__init__(
             parent,
@@ -85,7 +93,6 @@ class UserWidget(WidgetsGroup):
             padding=20,
         )
 
-        self.user = user
         self.icon = Label(
             self,
             x=0,
@@ -118,25 +125,28 @@ class UserWidget(WidgetsGroup):
             font=pg.font.Font(None, int(font_size * 0.8)),
         )
 
+    def set_status(self, status: UserStatus) -> None:
+        self.status.text = status.text
+        self.status.color = status.color
+
 
 class FriendWidget(UserWidget):
     def __init__(
         self,
         parent: Social,
-        x: int,
-        y: int,
+        y: int | CordFunction,
         user: User,
-        font_size: int,
     ):
-        font_size = font_size or int(os.environ["font_size"])
-        icon_size = int(os.environ["icon_size"])
+        font_size = int(int(os.environ["font_size"]) * 0.7)
 
         self.social = parent
 
-        super(FriendWidget, self).__init__(parent, x, y, user, icon_size, font_size)
+        super(FriendWidget, self).__init__(
+            parent, x=0, y=y, user=user, font_size=font_size
+        )
 
         self.drop_menu = FriendDropMenu(
-            self, can_invite=parent.network_client.room is not ...
+            self, can_invite=lambda: parent.network_client.room is not ...
         )
 
     def delete(self):
@@ -147,33 +157,32 @@ class FriendWidget(UserWidget):
         super(FriendWidget, self).handle_event(event)
         if event.type == ButtonClickEvent.type:
             if event.obj == self.drop_menu.delete_friend:
-                self.social.delete_friend(self)
+                self.social.network_client.delete_friend(uid=self.user.uid)
+                self.drop_menu.hide()
             elif event.obj == self.drop_menu.send_invite_button:
                 self.social.network_client.send_invite(
                     self.user,
                     fail_callback=lambda msg: self.social.info_alert.show_message(msg),
                 )
+                self.drop_menu.hide()
 
 
 class FriendRequestWidget(UserWidget):
     def __init__(
         self,
         parent: FriendRequests,
-        x: int,
-        y: int,
+        x: int | CordFunction,
+        y: int | CordFunction,
         user: User,
-        icon_size: int,
-        font_size: int,
         callback: ty.Callable[[ty.Literal["ok", "cancel"], FriendRequestWidget], ...],
     ):
+        font_size = int(os.environ["font_size"])
 
         super(FriendRequestWidget, self).__init__(
             parent,
             x,
             y,
             user,
-            icon_size,
-            font_size,
             width=(parent.rect.width - parent.padding * 2) // 3,
         )
 
@@ -298,6 +307,7 @@ class FriendRequests(Alert):
             return
 
         self.disable()
+        self.username_input.input_line.text = ""
         self.network_client.send_friend_request(
             username,
             success_callback=lambda: (
@@ -313,40 +323,25 @@ class FriendRequests(Alert):
     def manage_friend_request(
         self, status: ty.Literal["ok", "cancel"], widget: FriendRequestWidget
     ) -> None:
-        self.disable()
         if status == "ok":
             self.add_friend(widget)
         elif status == "cancel":
             self.delete_friend_request(widget)
 
     def add_friend(self, widget: FriendRequestWidget) -> None:
-        self.network_client.add_friend(
-            widget.user,
-            callback=lambda: (
-                self.remove(widget),
-                self.friend_requests.remove(widget),
-                self.parent.update(),
-                self.enable(),
-                Social.thread.__setattr__("_last_start", 0),
-            ),
-        )
+        self.remove(widget)
+        self.friend_requests.remove(widget)
+        self.parent.update()
+        self.network_client.add_friend(uid=widget.user.uid)
 
     def delete_friend_request(self, widget: FriendRequestWidget) -> None:
-        self.network_client.delete_friend_request(
-            widget.user,
-            callback=lambda: (
-                self.remove(widget),
-                self.friend_requests.remove(widget),
-                self.parent.update(),
-                self.enable(),
-                Social.thread.__setattr__("_last_start", 0),
-            ),
-        )
+        self.remove(widget),
+        self.friend_requests.remove(widget)
+        self.parent.update()
+        self.network_client.delete_friend_request(user=widget.user)
 
 
 class Social(WidgetsGroup):
-    thread: Thread = ...
-
     def __init__(self, parent: Group, network_client: NetworkClient):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
@@ -368,6 +363,7 @@ class Social(WidgetsGroup):
         self.user = UserWidget(
             self, x=0, y=0, user=network_client.user, icon_size=int(icon_size * 1.2)
         )
+
         self.line = Line(
             self,
             x=0,
@@ -403,29 +399,43 @@ class Social(WidgetsGroup):
 
         self.friends: list[FriendWidget] = []
 
-        if self.thread is ...:
-            self.__class__.thread = Thread(
-                worker=self.load_friends,
-                repetitive=True,
-                timeout=10,
-            )
-            self.__class__.thread.run()
+        network_client.on_delete_friend(callback=self.on_delete_friend)
+        network_client.on_add_friend(callback=self.on_add_friend)
+        network_client.on_change_user_status(callback=self.on_change_user_status)
+        network_client.on_friend_request(callback=self.on_friend_request)
 
-    def delete_friend(self, widget: FriendWidget) -> None:
-        self.network_client.delete_friend(
-            widget.user,
-            callback=lambda: (
-                widget.delete(),
-                self.friend_requests.remove(widget),
-                self.parent.update(),
-                Social.thread.__setattr__("_last_start", 0),
-            ),
-        )
+        Thread(worker=self.load_friends).run()
+        Thread(worker=self.load_friend_requests).run()
+
+    def on_delete_friend(self, user: User) -> None:
+        widget = [friend for friend in self.friends if friend.user.uid == user.uid][0]
+        widget.delete()
+        self.friends.remove(widget)
+        self.remove(widget)
+        self.parent.update()
+
+    def on_add_friend(self, user: User) -> None:
+        y = (
+            self.social_label.rect.bottom
+            if not len(self.friends)
+            else self.friends[-1].rect.bottom
+        ) + 10
+        self.friends.append(FriendWidget(self, y=y, user=user))
+
+    def on_change_user_status(self, user: User) -> None:
+        if user.uid == self.network_client.user.uid:
+            widget = self.user
+        else:
+            widget = [friend for friend in self.friends if friend.user.uid == user.uid]
+            if not len(widget):
+                return
+            widget = widget[0]
+        widget.set_status(user.status)
+
+    def on_friend_request(self) -> None:
+        self.load_friend_requests()
 
     def load_friends(self) -> None:
-        font_size = int(os.environ["font_size"])
-        icon_size = int(os.environ["icon_size"])
-
         self.network_client.update_user()
 
         logger.opt(colors=True).trace(
@@ -440,49 +450,59 @@ class Social(WidgetsGroup):
             friend.delete()
         self.friends.clear()
 
-        y = self.social_label.rect.bottom + 10
         for user in friends:
             self.friends.append(
-                FriendWidget(self, x=0, y=y, user=user, font_size=int(font_size * 0.7))
+                FriendWidget(
+                    self,
+                    y=lambda obj: (
+                        self.social_label.get_global_rect().bottom
+                        + 10
+                        + (
+                            sum(
+                                widget.rect.height
+                                for widget in self.friends[: self.friends.index(obj)]
+                            )
+                            if obj in self.friends
+                            else 0
+                        )
+                    ),
+                    user=user,
+                )
             )
-            y += self.friends[-1].rect.height
 
         self.parent.update()
 
-        if self.network_client.user.friend_requests:
-            logger.opt(colors=True).trace(
-                "Обновление списка запросов в друзья: "
-                f"<y>{self.network_client.user.friend_requests}</y>"
+    def load_friend_requests(self):
+        self.network_client.update_user()
+
+        logger.opt(colors=True).trace(
+            "Обновление списка запросов в друзья: "
+            f"<y>{self.network_client.user.friend_requests}</y>"
+        )
+        users = [
+            self.network_client.get_user(uid)
+            for uid in self.network_client.user.friend_requests
+        ]
+
+        for user in self.friend_requests.friend_requests:
+            self.friend_requests.remove(user)
+        self.friend_requests.friend_requests.clear()
+
+        y = self.friend_requests.friend_requests_label.rect.bottom + 20
+        x = 0
+        for i, user in enumerate(users):
+            self.friend_requests.friend_requests.append(
+                FriendRequestWidget(
+                    self.friend_requests,
+                    x=x,
+                    y=y,
+                    user=user,
+                    callback=self.friend_requests.manage_friend_request,
+                ),
             )
-            users = [
-                self.network_client.get_user(uid)
-                for uid in self.network_client.user.friend_requests
-            ]
+            x += self.friend_requests.friend_requests[-1].rect.width
+            if (i + 1) % 3 == 0:
+                x = 0
+                y += self.friend_requests.friend_requests[-1].rect.height
 
-            for user in self.friend_requests.friend_requests:
-                self.friend_requests.remove(user)
-            self.friend_requests.friend_requests.clear()
-
-            y = self.friend_requests.friend_requests_label.rect.bottom + 20
-            x = 0
-            for i, user in enumerate(users):
-                self.friend_requests.friend_requests.append(
-                    FriendRequestWidget(
-                        self.friend_requests,
-                        x=x,
-                        y=y,
-                        user=user,
-                        icon_size=int(icon_size),
-                        font_size=int(font_size),
-                        callback=self.friend_requests.manage_friend_request,
-                    ),
-                )
-                x += self.friend_requests.friend_requests[-1].rect.width
-                if (i + 1) % 3 == 0:
-                    x = 0
-                    y += self.friend_requests.friend_requests[-1].rect.height
-
-            self.add_friend_button.color = pg.Color("green")
-            self.parent.update()
-        else:
-            self.add_friend_button.color = pg.Color("red")
+        self.parent.update()
