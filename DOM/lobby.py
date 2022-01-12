@@ -1,3 +1,9 @@
+"""
+
+Интерфейсы взаимодействия с лобби.
+
+"""
+
 from __future__ import annotations
 
 import os
@@ -16,8 +22,17 @@ if ty.TYPE_CHECKING:
 
 class LobbyInvite(DropMenu):
     def __init__(self, parent: WidgetsGroup, msg: str, room_id: int):
+        """
+        Приглашение в лобби.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param msg: Сообщение.
+        :param room_id: ID лобби.
+        """
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+
+        self.room_id = room_id
 
         super(LobbyInvite, self).__init__(
             parent,
@@ -63,16 +78,26 @@ class LobbyInvite(DropMenu):
             border_width=3,
         )
 
-        self.room_id = room_id
-
-        self.open((0, 0))
+        self.open((0, 0))  # Показываем виджет в верхнем левом углу
 
     def handle_event(self, event: pg.event.Event) -> None:
+        """
+        Отключаем активацию по нажатию на определенный виджет.
+        :param event:
+        :return:
+        """
         WidgetsGroup.handle_event(self, event)
 
 
 class PlayerWidget(WidgetsGroup):
     def __init__(self, parent: WidgetsGroup, player: Player, y: int):
+        """
+        Виджет игрока в лобби.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param player: Игрок.
+        :param y: Координата Y.
+        """
         icon_size = int(os.environ["icon_size"])
         font_size = int(os.environ["font_size"])
 
@@ -158,6 +183,12 @@ class Buttons(WidgetsGroup):
 
 class Lobby(WidgetsGroup):
     def __init__(self, parent: Group, network_client: NetworkClient):
+        """
+        Интерфейс лобби.
+        :param parent: Объект к которому принадлежит виджет.
+        :type parent: Объект класса, родителем которого является Group.
+        :param network_client: ...
+        """
         resolution = Resolution.converter(os.environ["resolution"])
 
         self.network_client = network_client
@@ -175,7 +206,10 @@ class Lobby(WidgetsGroup):
         self.players: WidgetsGroup = ...
         self.buttons: Buttons = ...
 
-    def init(self):
+    def init(self) -> None:
+        """
+        Обновляем лобби.
+        """
         if self.players is not ...:
             self.remove(self.players)
         if self.buttons is not ...:

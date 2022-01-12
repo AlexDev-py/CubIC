@@ -23,13 +23,16 @@ os.environ["AUTH_PATH"] = os.path.join(os.environ["APP_DIR"], ".auth")
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
 # Сервер
-# os.environ["HOST"] = "http://127.0.0.1:5000"
+# os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
 os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
 
 pygame.init()
 
 info = pygame.display.Info()
 # Разрешение монитора
+# TODO: Нужно запретить ставить разрешение больше чем максимально возможное
+# TODO: Нужно сделать динамическую генерацию возможных разрешений,
+#  в зависимости от разрешения монитора
 os.environ["MAX_RESOLUTION"] = f"{info.current_w};{info.current_h}"
 
 logger = __import__("logger").logger

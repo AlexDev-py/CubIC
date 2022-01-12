@@ -59,6 +59,7 @@ class Settings(Alert):
     def handle_event(self, event: pg.event.Event) -> None:
         super(Settings, self).handle_event(event)
         if event.type == ButtonClickEvent.type:
+            # Обработка нажатий кнопок
             if event.obj == self.resolution_setting.btn_low:
                 self.change_resolution(
                     ALLOWED_RESOLUTION[
@@ -149,6 +150,7 @@ class ResolutionSetting(WidgetsGroup):
             border_width=2,
         )
 
+        # Скрываем кнопки
         if ALLOWED_RESOLUTION.index(resolution) == 0:
             self.btn_low.disable()
             self.btn_low.hide()

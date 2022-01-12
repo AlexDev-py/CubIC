@@ -410,9 +410,11 @@ class FriendRequests(Alert):
         Добавляет пользователя в друзья.
         :param widget: Виджет запроса.
         """
+        # Удаляем виджет запроса в друзья
         self.remove(widget)
         self.friend_requests.remove(widget)
         self.parent.update()
+
         self.network_client.add_friend(uid=widget.user.uid)
 
     def delete_friend_request(self, widget: FriendRequestWidget) -> None:
@@ -420,9 +422,11 @@ class FriendRequests(Alert):
         Отклоняет запрос.
         :param widget: Виджет запроса.
         """
+        # Удаляем виджет запроса в друзья
         self.remove(widget),
         self.friend_requests.remove(widget)
         self.parent.update()
+
         self.network_client.delete_friend_request(user=widget.user)
 
 
@@ -505,7 +509,9 @@ class Social(WidgetsGroup):
         Удаление друга.
         :param user: Пользователь.
         """
+        # Получаем виджет друга
         widget = [friend for friend in self.friends if friend.user.uid == user.uid][0]
+        # Удаляем виджет друга
         widget.delete()
         self.friends.remove(widget)
         self.remove(widget)
@@ -516,21 +522,35 @@ class Social(WidgetsGroup):
         Добавление друга.
         :param user: Пользователь.
         """
-        y = (
-            self.social_label.rect.bottom
-            if not len(self.friends)
-            else self.friends[-1].rect.bottom
-        ) + 10
-        self.friends.append(FriendWidget(self, y=y, user=user))
+        self.friends.append(
+            FriendWidget(
+                self,
+                y=lambda obj: (
+                    self.social_label.get_global_rect().bottom
+                    + 10
+                    + (
+                        sum(
+                            widget.rect.height
+                            for widget in self.friends[: self.friends.index(obj)]
+                        )
+                        if obj in self.friends
+                        else 0
+                    )
+                ),  # Динамическая координата Y
+                user=user,
+            )
+        )  # Добавляем виджет друга
+        self.parent.update()
 
     def on_change_user_status(self, user: User) -> None:
         """
-        Изменение статуса пользователя.
+        Изменение статуса активности пользователя.
         :param user: Пользователь.
         """
         if user.uid == self.network_client.user.uid:  # Если это текущий пользователь
             widget = self.user_widget
         else:
+            # Получаем виджеты пользователь по uid
             widget = [friend for friend in self.friends if friend.user.uid == user.uid]
             if not len(widget):
                 return
@@ -547,7 +567,7 @@ class Social(WidgetsGroup):
         """
         Обновляет список друзей.
         """
-        self.network_client.update_user()
+        self.network_client.update_user()  # Обновляем данные о текущем пользователе
 
         logger.opt(colors=True).trace(
             f"Обновление списка друзей: <y>{self.network_client.user.friends}</y>"
@@ -555,12 +575,14 @@ class Social(WidgetsGroup):
         friends = [
             self.network_client.get_user(uid)
             for uid in self.network_client.user.friends
-        ]
+        ]  # Получаем информацию о друзьях
 
+        # Удаляем старые виджеты
         for friend in self.friends:
             friend.delete()
         self.friends.clear()
 
+        # Добавляем новые виджеты
         for user in friends:
             self.friends.append(
                 FriendWidget(
@@ -587,7 +609,7 @@ class Social(WidgetsGroup):
         """
         Обновляет список запросов в друзья.
         """
-        self.network_client.update_user()
+        self.network_client.update_user()  # Обновляем данные о текущем пользователе
 
         logger.opt(colors=True).trace(
             "Обновление списка запросов в друзья: "
@@ -596,12 +618,14 @@ class Social(WidgetsGroup):
         users = [
             self.network_client.get_user(uid)
             for uid in self.network_client.user.friend_requests
-        ]
+        ]  # Получаем информацию о пользователях, отправивших запрос дружбы
 
+        # Удаляем старые виджеты
         for user in self.friend_requests.friend_requests:
             self.friend_requests.remove(user)
         self.friend_requests.friend_requests.clear()
 
+        # Добавляем новые виджеты
         y = self.friend_requests.friend_requests_label.rect.bottom + 20
         x = 0
         for i, user in enumerate(users):

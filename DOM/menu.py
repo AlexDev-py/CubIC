@@ -1,3 +1,9 @@
+"""
+
+Меню клиента.
+
+"""
+
 from __future__ import annotations
 
 import os
@@ -79,6 +85,8 @@ class MenuButtons(WidgetsGroup):
 
 class MenuScreen(Group):
     resolution = Resolution.converter(os.environ["resolution"])
+
+    # TODO: нужно полностью перейти на os.environ
     font_size = 20
     icon_size = 25
 
@@ -118,6 +126,7 @@ class MenuScreen(Group):
         self.running = True
         self.lobby_invite: LobbyInvite = ...
 
+        # Подключаем обработчики событий
         self.network_client.on_lobby_invite(callback=self.on_lobby_invite)
         self.network_client.on_joining_the_lobby(callback=self.lobby.init)
         self.network_client.on_leaving_the_lobby(
@@ -125,13 +134,21 @@ class MenuScreen(Group):
         )
         self.network_client.on_error(callback=self.info_alert.show_message)
 
-    def on_lobby_invite(self, msg: str, room_id: int):
-        if self.lobby_invite is not ...:
+    def on_lobby_invite(self, msg: str, room_id: int) -> None:
+        """
+        Приглашение в лобби.
+        :param msg: Сообщение.
+        :param room_id: ID лобби.
+        """
+        if self.lobby_invite is not ...:  # Удаляем старое приглашение
             self.remove(self.lobby_invite)
             self.lobby_invite: LobbyInvite = ...
         self.lobby_invite = LobbyInvite(self.social, msg, room_id)
 
-    def open_lobby(self):
+    def open_lobby(self) -> None:
+        """
+        Скрывает кнопки меню и открывает лобби.
+        """
         self.buttons.hide(),
         self.buttons.disable(),
         self.lobby.init(),
@@ -144,21 +161,24 @@ class MenuScreen(Group):
                 if event.type == pg.QUIT:
                     self.terminate()
                 elif event.type == ButtonClickEvent.type:
+                    # Обработка нажатий на кнопки
                     if self.lobby_invite is not ...:
+                        # Обработка взаимодействия с приглашением в лобби
                         if event.obj == self.lobby_invite.cancel:
-                            self.remove(self.lobby_invite)
+                            self.remove(self.lobby_invite)  # Удаляем приглашение
                             self.lobby_invite: LobbyInvite = ...
                         elif event.obj == self.lobby_invite.accept:
-                            self.remove(self.lobby_invite)
+                            self.remove(self.lobby_invite)  # Удаляем приглашение
                             self.network_client.join_lobby(
                                 self.lobby_invite.room_id,
                                 success_callback=self.open_lobby,
                                 fail_callback=lambda msg: self.info_alert.show_message(
                                     msg
                                 ),
-                            )
+                            )  # Присоединяемся к лобби
                             self.lobby_invite: LobbyInvite = ...
                     if self.lobby.buttons is not ...:
+                        # Обработка кнопок в лобби
                         if event.obj == self.lobby.buttons.leave_lobby_button:
                             self.network_client.leave_lobby()
                             self.lobby.disable()
