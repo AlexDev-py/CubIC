@@ -323,6 +323,34 @@ class NetworkClient:
             ),
         )
 
+    # === SET READY ===
+
+    def ready(self) -> None:
+        self.sio.emit("ready", dict(room_id=self.room.room_id))
+
+    def on_ready(self, callback: ty.Callable[[int], ...]) -> None:
+        self.sio.on(
+            "ready",
+            lambda response: (
+                logger.opt(colors=True).info(f"Игрок <y>{response['uid']}</y> готов"),
+                callback(response["uid"]),
+            ),
+        )
+
+    def no_ready(self) -> None:
+        self.sio.emit("no ready", dict(room_id=self.room.room_id))
+
+    def on_no_ready(self, callback: ty.Callable[[int], ...]) -> None:
+        self.sio.on(
+            "no ready",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{response['uid']}</y> еще не готов"
+                ),
+                callback(response["uid"]),
+            ),
+        )
+
     # ===== TOOLS =====
 
     def disconnect(self) -> None:

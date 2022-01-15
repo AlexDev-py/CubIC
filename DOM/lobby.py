@@ -12,8 +12,9 @@ import typing as ty
 import pygame as pg
 
 from base import Button, WidgetsGroup, Group, Label, Anchor, Text
+from base.events import ButtonClickEvent
 from database.field_types import Resolution
-from utils import load_image, DropMenu
+from utils import load_image, DropMenu, InfoAlert
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -101,6 +102,8 @@ class PlayerWidget(WidgetsGroup):
         icon_size = int(os.environ["icon_size"])
         font_size = int(os.environ["font_size"])
 
+        self.player = player
+
         super(PlayerWidget, self).__init__(
             parent,
             x=0,
@@ -138,6 +141,9 @@ class PlayerWidget(WidgetsGroup):
             color=pg.Color("red"),
             font=pg.font.Font(None, font_size),
         )
+
+    def set_status(self) -> None:
+        self.status.text = "Готов" if self.player.ready else "Не готов..."
 
 
 class Buttons(WidgetsGroup):
@@ -204,7 +210,29 @@ class Lobby(WidgetsGroup):
         self.disable()
 
         self.players: WidgetsGroup = ...
+        self._players: list[PlayerWidget] = []
         self.buttons: Buttons = ...
+
+        self.network_client.on_ready(
+            callback=lambda uid: self.on_set_ready(uid, status=True)
+        )
+        self.network_client.on_no_ready(
+            callback=lambda uid: self.on_set_ready(uid, status=False)
+        )
+
+        self.info_alert = InfoAlert(
+            parent, parent_size=resolution, width=int(resolution.width * 0.5)
+        )
+
+    def on_set_ready(self, uid: int, status: True | False) -> None:
+        widgets = [widget for widget in self._players if widget.player.uid == uid]
+        if len(widgets):
+            widget = widgets[0]
+            self.network_client.room.get_by_uid(uid).ready = True
+            if uid == self.network_client.user.uid:
+                self.buttons.ready_button.text = widget.status.text
+            widget.player.ready = status
+            widget.set_status()
 
     def init(self) -> None:
         """
@@ -212,6 +240,7 @@ class Lobby(WidgetsGroup):
         """
         if self.players is not ...:
             self.remove(self.players)
+            self._players.clear()
         if self.buttons is not ...:
             self.remove(self.buttons)
 
@@ -226,5 +255,28 @@ class Lobby(WidgetsGroup):
         for player in self.network_client.room.players:
             player_widget = PlayerWidget(self.players, player, y)
             y = player_widget.rect.bottom + 10
+            self._players.append(player_widget)
 
         self.buttons = Buttons(self)
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        super(Lobby, self).handle_event(event)
+        if event.type == ButtonClickEvent.type and self.buttons is not ...:
+            if event.obj == self.buttons.ready_button:
+                player = self.network_client.room.get_by_uid(
+                    self.network_client.user.uid
+                )
+                if player.is_owner:
+                    player.ready = True
+                    self.start_game()
+                else:
+                    if not player.ready:
+                        self.network_client.ready()
+                    else:
+                        self.network_client.no_ready()
+
+    def start_game(self) -> None:
+        if not all(widget.player.ready for widget in self._players):
+            self.info_alert.show_message("Не все игроки готовы")
+        else:
+            print("ok")
