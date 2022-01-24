@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+
 import os
 import typing as ty
 
@@ -52,11 +53,23 @@ def check_password(password: str) -> True | False:
     :param password:
     :return: True - пароль подходит
     """
-    return True
+
+    re = __import__('re')
+
+    if re.search(re.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{12,40}$"), password):
+        return True
+
+    elif re.search(re.compile("^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[a-z\d@$!#%*?&]{12,40}$"), password):
+        return True
+
+    elif re.search(re.compile("^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Z\d@$!#%*?&]{9,40}$"), password):
+        return True
+
+    return False
 
 
 def load_image(
-    name: str, size: tuple[int, int] = None, color_key: int = None
+        name: str, size: tuple[int, int] = None, color_key: int = None
 ) -> pg.Surface:
     path = os.path.join("data", name)
     if not os.path.isfile(path):
@@ -138,15 +151,15 @@ class InfoAlert(Alert):
 
 class DropMenu(WidgetsGroup):
     def __init__(
-        self,
-        parent: WidgetsGroup,
-        *,
-        width: int | CordFunction | None = None,
-        height: int | CordFunction | None = None,
-        padding: int = 0,
-        background: pg.Color | None = None,
-        border_color: pg.Color = pg.Color(255, 255, 255),
-        border_width: int = 0,
+            self,
+            parent: WidgetsGroup,
+            *,
+            width: int | CordFunction | None = None,
+            height: int | CordFunction | None = None,
+            padding: int = 0,
+            background: pg.Color | None = None,
+            border_color: pg.Color = pg.Color(255, 255, 255),
+            border_width: int = 0,
     ):
         """
         Выпадающий виджет.
