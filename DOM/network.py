@@ -59,7 +59,7 @@ class NetworkClient:
         Устанавливает соединение между клиентом и сервером.
         """
         logger.debug(f"Подключение к серверу: {os.environ['HOST']}")
-        self.__class__.sio.connect(os.environ["HOST"], wait_timeout=5)
+        self.__class__.sio.connect(os.environ["HOST"], wait_timeout=10)
         atexit.register(self.disconnect)
 
     # ===== LOGIN =====

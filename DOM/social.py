@@ -556,7 +556,10 @@ class Social(WidgetsGroup):
             if not len(widget):
                 return
             widget = widget[0]
-        widget.set_status(user.status)
+        try:
+            widget.set_status(user.status)
+        except pg.error:
+            pass
 
     def on_friend_request(self) -> None:
         """

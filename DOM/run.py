@@ -5,13 +5,23 @@
 
 """
 
+import argparse
 import os
 
 import pygame
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--env",
+    default=r"{LOCALAPPDATA}\DOM",
+    type=str,
+    help="Путь к директории с файлами игры",
+)
+args = parser.parse_args()
+
 # CONFIG SETUP
 # Путь к директории приложения
-os.environ["APP_DIR"] = os.path.join(os.environ["LOCALAPPDATA"], "DOM")
+os.environ["APP_DIR"] = args.env.format(**{k: v for k, v in os.environ.items()})
 if not os.path.exists(os.environ["APP_DIR"]):
     os.mkdir(os.environ["APP_DIR"])
 # Путь к базе данных
