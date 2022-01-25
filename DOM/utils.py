@@ -48,7 +48,11 @@ class FinishStatus:
 
 
 def check_password(password: str) -> True | False:
-
+    """
+    Проверка сложности пароля.
+    :param password:
+    :return: True - пароль подходит
+    """
     # Проверяет что длина пароля больше 12 и содержатся ли заглавные, строчные буквы и есть ли символы
     if re.search(re.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{12,40}$"), password):
         return True
