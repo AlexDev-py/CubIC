@@ -20,6 +20,10 @@ os.environ["DB_PATH"] = os.path.join(os.environ["APP_DIR"], "database.sqlite")
 os.environ["DEBUG_PATH"] = os.path.join(os.environ["APP_DIR"], "debug.log")
 # Путь к файлу с данными аккаунта
 os.environ["AUTH_PATH"] = os.path.join(os.environ["APP_DIR"], ".auth")
+# Путь к директории с персонажами
+os.environ["CHARACTERS_PATH"] = os.path.join(os.environ["APP_DIR"], "characters")
+# Путь к директории с иконками пользователей
+os.environ["USER_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "icons")
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
 # Сервер

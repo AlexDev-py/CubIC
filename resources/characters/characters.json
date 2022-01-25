@@ -1,0 +1,6 @@
+{"characters": [
+  {"name": "Воин", "icon": "warrior.png"},
+  {"name": "Танк", "icon": "tank.png"},
+  {"name": "Лучник", "icon": "archer.png"},
+  {"name": "Маг", "icon": "magician.png"}
+]}

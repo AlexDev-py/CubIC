@@ -136,8 +136,9 @@ class UserWidget(WidgetsGroup):
             height=icon_size,
             anchor=Anchor.center,
             sprite=load_image(
-                rf"icons\icon_{user.icon}.png",
-                (icon_size - 2, icon_size - 2),
+                f"icon_{user.icon}.png",
+                namespace=os.environ["USER_ICONS_PATH"],
+                size=(icon_size - 2, icon_size - 2),
             ),
         )
 

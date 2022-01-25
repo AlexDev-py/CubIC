@@ -10,15 +10,18 @@ import os
 import typing as ty
 
 import pygame as pg
+from loguru import logger
 
 from base import Button, WidgetsGroup, Group, Label, Anchor, Text
 from base.events import ButtonClickEvent
 from database.field_types import Resolution
+from game.character import characters
 from utils import load_image, DropMenu, InfoAlert
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
     from game.player import Player
+    from game.character import Character
 
 
 class LobbyInvite(DropMenu):
@@ -108,7 +111,6 @@ class PlayerWidget(WidgetsGroup):
             parent,
             x=0,
             y=y,
-            padding=10,
         )
 
         self.icon = Label(
@@ -119,8 +121,9 @@ class PlayerWidget(WidgetsGroup):
             height=icon_size,
             anchor=Anchor.center,
             sprite=load_image(
-                rf"icons\icon_{player.icon}.png",
-                (icon_size - 2, icon_size - 2),
+                f"icon_{player.icon}.png",
+                namespace=os.environ["USER_ICONS_PATH"],
+                size=(icon_size - 2, icon_size - 2),
             ),
         )
 
@@ -142,8 +145,19 @@ class PlayerWidget(WidgetsGroup):
             font=pg.font.Font(None, font_size),
         )
 
+        if player.character is not ...:
+            self.set_character()
+
     def set_status(self) -> None:
         self.status.text = "Готов" if self.player.ready else "Не готов..."
+
+    def set_character(self) -> None:
+        icon_size = int(os.environ["icon_size"])
+        self.icon.sprite = load_image(
+            self.player.character.icon,
+            namespace=os.environ["CHARACTERS_PATH"],
+            size=(icon_size, icon_size),
+        )
 
 
 class Buttons(WidgetsGroup):
@@ -187,6 +201,86 @@ class Buttons(WidgetsGroup):
         )
 
 
+class CharacterButton(WidgetsGroup):
+    def __init__(
+        self, parent: CharactersMenu, y: int, character: Character, character_id: int
+    ):
+        font_size = int(os.environ["font_size"])
+        icon_size = int(os.environ["icon_size"])
+
+        self.pressed = False
+        self.character_id = character_id
+
+        super(CharacterButton, self).__init__(parent, x=0, y=y)
+
+        self.icon = Label(
+            self,
+            x=0,
+            y=lambda obj: round(self.rect.height / 2 - obj.rect.height / 2),
+            width=icon_size,
+            height=icon_size,
+            sprite=load_image(
+                character.icon,
+                namespace=os.environ["CHARACTERS_PATH"],
+                size=(icon_size, icon_size),
+            ),
+        )
+
+        self.name = Label(
+            self,
+            x=self.icon.rect.right + 10,
+            y=lambda obj: round(self.rect.height / 2 - obj.rect.height / 2),
+            text=character.name,
+            color=pg.Color("red"),
+            font=pg.font.Font(None, font_size),
+        )
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        super(CharacterButton, self).handle_event(event)
+        if self.enabled:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == pg.BUTTON_LEFT:
+                    rect = self.get_global_rect()
+                    if rect.collidepoint(event.pos):
+                        self.pressed = True
+            elif event.type == pg.MOUSEBUTTONUP:
+                if event.button == pg.BUTTON_LEFT:
+                    if self.pressed:
+                        self.pressed = False
+                        rect = self.get_global_rect()
+                        if rect.collidepoint(event.pos):
+                            event = ButtonClickEvent(self)  # noqa
+                            event.post()
+
+
+class CharactersMenu(WidgetsGroup):
+    def __init__(self, parent: Lobby):
+        font_size = int(os.environ["font_size"])
+        icon_size = int(os.environ["icon_size"])
+
+        super(CharactersMenu, self).__init__(parent, x=0, y=0, padding=20)
+
+        self.label = Label(
+            self,
+            x=0,
+            y=0,
+            text="Выбор персонажа",
+            color=pg.Color("red"),
+            font=pg.font.Font(None, font_size),
+        )
+
+        self.characters = []
+        for i, character in enumerate(characters):
+            self.characters.append(
+                CharacterButton(
+                    self,
+                    y=self.label.rect.bottom + icon_size * i + 10 * (i + 1),
+                    character=character,
+                    character_id=i,
+                )
+            )
+
+
 class Lobby(WidgetsGroup):
     def __init__(self, parent: Group, network_client: NetworkClient):
         """
@@ -212,6 +306,7 @@ class Lobby(WidgetsGroup):
         self.players: WidgetsGroup = ...
         self._players: list[PlayerWidget] = []
         self.buttons: Buttons = ...
+        self.characters_menu = CharactersMenu(self)
 
         self.network_client.on_ready(
             callback=lambda uid: self.on_set_ready(uid, status=True)
@@ -219,6 +314,7 @@ class Lobby(WidgetsGroup):
         self.network_client.on_no_ready(
             callback=lambda uid: self.on_set_ready(uid, status=False)
         )
+        self.network_client.on_character_selection(callback=self.on_character_selection)
 
         self.info_alert = InfoAlert(
             parent, parent_size=resolution, width=int(resolution.width * 0.5)
@@ -233,6 +329,14 @@ class Lobby(WidgetsGroup):
                 self.buttons.ready_button.text = widget.status.text
             widget.player.ready = status
             widget.set_status()
+
+    def on_character_selection(self, uid: int, character_id: int) -> None:
+        widgets = [widget for widget in self._players if widget.player.uid == uid]
+        if len(widgets):
+            widget = widgets[0]
+            player = self.network_client.room.get_by_uid(uid)
+            player.select_character(character_id)
+            widget.set_character()
 
     def init(self) -> None:
         """
@@ -254,26 +358,42 @@ class Lobby(WidgetsGroup):
         y = 0
         for player in self.network_client.room.players:
             player_widget = PlayerWidget(self.players, player, y)
-            y = player_widget.rect.bottom + 10
+            y = player_widget.rect.bottom + 20
             self._players.append(player_widget)
 
         self.buttons = Buttons(self)
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(Lobby, self).handle_event(event)
-        if event.type == ButtonClickEvent.type and self.buttons is not ...:
-            if event.obj == self.buttons.ready_button:
+        if event.type == ButtonClickEvent.type:
+            if self.buttons is not ...:
+                if event.obj == self.buttons.ready_button:
+                    player = self.network_client.room.get_by_uid(
+                        self.network_client.user.uid
+                    )
+                    if player.character is ...:
+                        self.info_alert.show_message("Вы не выбрали персонажа")
+                    else:
+                        if player.is_owner:
+                            player.ready = True
+                            self.start_game()
+                        else:
+                            if not player.ready:
+                                self.network_client.ready()
+                            else:
+                                self.network_client.no_ready()
+            if event.obj in self.characters_menu.characters:
                 player = self.network_client.room.get_by_uid(
                     self.network_client.user.uid
                 )
-                if player.is_owner:
-                    player.ready = True
-                    self.start_game()
-                else:
-                    if not player.ready:
-                        self.network_client.ready()
-                    else:
-                        self.network_client.no_ready()
+                if (
+                    player.character is ...
+                    or player.character.name != event.obj.name.text
+                ):
+                    logger.opt(colors=True).info(
+                        f"Выбран персонаж: <y>{event.obj.name.text}</y>"
+                    )
+                    self.network_client.select_character(event.obj.character_id)
 
     def start_game(self) -> None:
         if not all(widget.player.ready for widget in self._players):

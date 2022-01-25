@@ -15,7 +15,7 @@ import requests
 import socketio  # noqa
 from loguru import logger
 
-from game import Room
+from game import Room, Player
 
 
 class UserStatus(ty.NamedTuple):
@@ -283,8 +283,8 @@ class NetworkClient:
     ) -> None:
         if response.get("status") == "ok":
             self.room = Room(response["room_id"])
-            for i, user in enumerate(response["users"]):
-                self.room.join(User(**user), is_owner=i == 0)
+            for i, player in enumerate(response["users"]):
+                self.room.join(Player(**player, is_owner=i == 0))
             logger.opt(colors=True).info(
                 f"Вы присоединились в лобби <y>{self.room.room_id}</y>"
             )
@@ -296,7 +296,13 @@ class NetworkClient:
         self.sio.on(
             "joining the lobby",
             lambda response: (
-                self.room.join(User(**response["user"])),
+                (
+                    self.room.join(User(**response["user"]))
+                    if not self.room.get_by_uid(response["user"]["uid"])
+                    else ...
+                )
+                if self.room is not ...
+                else ...,
                 logger.opt(colors=True).info(
                     f"<y>{response['user']['username']}</y> "
                     "присоединился к вашей группе"
@@ -320,6 +326,26 @@ class NetworkClient:
             lambda response: (
                 self.room.leave(response["uid"]),
                 callback(response["msg"]),
+            ),
+        )
+
+    # === SELECT CHARACTER ===
+
+    def select_character(self, character_id: int) -> None:
+        self.sio.emit(
+            "select character",
+            dict(room_id=self.room.room_id, character_id=character_id),
+        )
+
+    def on_character_selection(self, callback: ty.Callable[[int, int], ...]) -> None:
+        self.sio.on(
+            "character selection",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Пользователь <y>{response['uid']}</y> выбрал персонажа: "
+                    f"<y>{response['character_id']}</y>"
+                ),
+                callback(response["uid"], response["character_id"]),
             ),
         )
 

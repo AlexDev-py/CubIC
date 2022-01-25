@@ -17,8 +17,10 @@ class Room:
         self.field: list[list[True | False]] = ...
         self.shop: list = ...
 
-    def join(self, user: User, is_owner: True | False = False) -> None:
-        self.players.append(Player(user, is_owner))
+    def join(self, user: User | Player, is_owner: True | False = False) -> None:
+        self.players.append(
+            user if isinstance(user, Player) else Player.from_user(user, is_owner)
+        )
 
     def leave(self, uid: int) -> None:
         if player := self.get_by_uid(uid):

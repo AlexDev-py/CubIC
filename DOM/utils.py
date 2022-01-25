@@ -56,9 +56,12 @@ def check_password(password: str) -> True | False:
 
 
 def load_image(
-    name: str, size: tuple[int, int] = None, color_key: int = None
+    file_name: str,
+    namespace: str = None,
+    size: tuple[int, int] = None,
+    color_key: int = None,
 ) -> pg.Surface:
-    path = os.path.join("data", name)
+    path = os.path.join(namespace or os.environ["APP_DIR"], file_name)
     if not os.path.isfile(path):
         logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
         return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
