@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-
 import os
 import re
 import typing as ty
@@ -53,24 +52,39 @@ def check_password(password: str) -> True | False:
     :param password:
     :return: True - пароль подходит
     """
-    # Проверяет что длина пароля больше 12 и содержатся ли заглавные, строчные буквы и есть ли символы
-    if re.search(re.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{12,40}$"), password):
+
+    # Проверяет что длина пароля больше 12 и содержатся ли заглавные,
+    # строчные буквы и есть ли символы
+    if re.search(
+        re.compile(
+            r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{12,40}$"
+        ),
+        password,
+    ):
         return True
 
     # Если пароль длинный с символами, строчными буквами, но без заглавных.
-    elif re.search(re.compile("^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[a-z\d@$!#%*?&]{12,40}$"), password):
+    elif re.search(
+        re.compile(r"^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[a-z\d@$!#%*?&]{12,40}$"),
+        password,
+    ):
         return True
 
-    # Дополнительное условие что пароль по длине больше 9 и в нём есть символы, заглавные буквы, но без строчных.
-    elif re.search(re.compile("^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Z\d@$!#%*?&]{9,40}$"), password):
+    # Дополнительное условие, что пароль по длине больше 9 и в нём есть символы,
+    # заглавные буквы, но без строчных.
+    elif re.search(
+        re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Z\d@$!#%*?&]{9,40}$"),
+        password,
+    ):
         return True
 
-    # Пароль сложный так или иначе должен содержать символы так что проверку без символов не делаем.
+    # Пароль сложный так или иначе должен содержать символы
+    # так что проверку без символов не делаем.
     return False
 
 
 def load_image(
-        name: str, size: tuple[int, int] = None, color_key: int = None
+    name: str, size: tuple[int, int] = None, color_key: int = None
 ) -> pg.Surface:
     path = os.path.join("data", name)
     if not os.path.isfile(path):
@@ -152,15 +166,15 @@ class InfoAlert(Alert):
 
 class DropMenu(WidgetsGroup):
     def __init__(
-            self,
-            parent: WidgetsGroup,
-            *,
-            width: int | CordFunction | None = None,
-            height: int | CordFunction | None = None,
-            padding: int = 0,
-            background: pg.Color | None = None,
-            border_color: pg.Color = pg.Color(255, 255, 255),
-            border_width: int = 0,
+        self,
+        parent: WidgetsGroup,
+        *,
+        width: int | CordFunction | None = None,
+        height: int | CordFunction | None = None,
+        padding: int = 0,
+        background: pg.Color | None = None,
+        border_color: pg.Color = pg.Color(255, 255, 255),
+        border_width: int = 0,
     ):
         """
         Выпадающий виджет.
