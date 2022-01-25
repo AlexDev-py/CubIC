@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+import re
 import typing as ty
 
 import pygame as pg
@@ -47,12 +48,39 @@ class FinishStatus:
 
 def check_password(password: str) -> True | False:
     """
-    TODO
     Проверка сложности пароля.
     :param password:
     :return: True - пароль подходит
     """
-    return True
+
+    # Проверяет что длина пароля больше 12 и содержатся ли заглавные,
+    # строчные буквы и есть ли символы
+    if re.search(
+        re.compile(
+            r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{12,40}$"
+        ),
+        password,
+    ):
+        return True
+
+    # Если пароль длинный с символами, строчными буквами, но без заглавных.
+    elif re.search(
+        re.compile(r"^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[a-z\d@$!#%*?&]{12,40}$"),
+        password,
+    ):
+        return True
+
+    # Дополнительное условие, что пароль по длине больше 9 и в нём есть символы,
+    # заглавные буквы, но без строчных.
+    elif re.search(
+        re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Z\d@$!#%*?&]{9,40}$"),
+        password,
+    ):
+        return True
+
+    # Пароль сложный так или иначе должен содержать символы
+    # так что проверку без символов не делаем.
+    return False
 
 
 def load_image(
