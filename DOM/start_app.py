@@ -94,18 +94,25 @@ class StartAppScreen(Group):
         name_spisok = list()
         hash_dict = dict()
 
+        # Проходимся по файлам или папкам в директорий
         for i in path:
+            # Если есть папка.
             if os.path.isdir(os.path.join(os.getcwd())[:-4] + '/resources/' + i):
                 path_2 = os.listdir(os.path.join(os.getcwd())[:-4] + '/resources/' + i)
+                # Проходимся по файлам в папке
                 for name in path_2:
+                    # Заносим название файла в список
                     name_spisok.append(name)
 
+                    # Открываем файл
                     with open(f"{os.path.join(os.getcwd())[:-4]}/resources/{i}/{name}", "rb") as f:
                         img_hash = hashlib.md5()
                         while chunk := f.read(8192):
                             img_hash.update(chunk)
+                    # Заносим хэш в список
                     hash_spisok.append(img_hash.hexdigest())
 
+            # Если это файл
             else:
                 name_spisok.append(i)
                 with open(f"{os.path.join(os.getcwd())[:-4]}/resources/{i}", "rb") as f:
