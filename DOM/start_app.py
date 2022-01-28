@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import os
 import time
+import hashlib
+import os
+import json
 import typing as ty
 
 import pygame as pg
@@ -85,6 +88,41 @@ class StartAppScreen(Group):
             Проверяет целостность файлов.
             Проверяет наличие обновления клиента.
         """
+        # Пути до папок
+        path = os.listdir(os.path.join(os.getcwd())[:-4] + '/resources')
+        hash_spisok = list()
+        name_spisok = list()
+        hash_dict = dict()
+
+        for i in path:
+            if os.path.isdir(os.path.join(os.getcwd())[:-4] + '/resources/' + i):
+                path_2 = os.listdir(os.path.join(os.getcwd())[:-4] + '/resources/' + i)
+                for name in path_2:
+                    name_spisok.append(name)
+
+                    with open(f"{os.path.join(os.getcwd())[:-4]}/resources/{i}/{name}", "rb") as f:
+                        img_hash = hashlib.md5()
+                        while chunk := f.read(8192):
+                            img_hash.update(chunk)
+                    hash_spisok.append(img_hash.hexdigest())
+
+            else:
+                name_spisok.append(i)
+                with open(f"{os.path.join(os.getcwd())[:-4]}/resources/{i}", "rb") as f:
+                    img_hash = hashlib.md5()
+                    while chunk := f.read(8192):
+                        img_hash.update(chunk)
+                hash_spisok.append(img_hash.hexdigest())
+
+        # Создаём словарь с парами name: hash
+        hash_dict['hashing'] = [
+            {'name': key, 'hash': value}
+            for key, value in zip(name_spisok, hash_spisok)
+        ]
+        # Создаём json файл
+        with open('hashing.json', mode='w') as file:
+            json.dump(hash_dict, file, indent=2)
+
         logger.debug("Загрузка клиента")
         while not self.network_client.sio.connected:
             try:
