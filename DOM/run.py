@@ -34,11 +34,13 @@ os.environ["AUTH_PATH"] = os.path.join(os.environ["APP_DIR"], ".auth")
 os.environ["CHARACTERS_PATH"] = os.path.join(os.environ["APP_DIR"], "characters")
 # Путь к директории с иконками пользователей
 os.environ["USER_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "icons")
+# Путь к директории с локациями
+os.environ["LOCATIONS_PATH"] = os.path.join(os.environ["APP_DIR"], "locations")
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
 # Сервер
-# os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
-os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
+os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
+# os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
 
 pygame.init()
 

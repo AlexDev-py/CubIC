@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as ty
 
+from .item import Item
 from .player import Player
 
 if ty.TYPE_CHECKING:
@@ -12,10 +13,13 @@ class Room:
     def __init__(self, room_id: int):
         self.room_id = room_id
         self.game = False
+        self.lvl = 1
 
         self.players: list[Player] = []
         self.field: list[list[True | False]] = ...
-        self.shop: list = ...
+        self.location_name: str = ...
+        self.location: list[list[int]] = ...
+        self.shop: list[Item] = ...
 
     def join(self, user: User | Player, is_owner: True | False = False) -> None:
         self.players.append(
@@ -31,3 +35,22 @@ class Room:
     def get_by_uid(self, uid: int) -> Player | None:
         if players := [player for player in self.players if player.uid == uid]:
             return players[0]
+
+    def update_player(self, player: Player) -> None:
+        self.players[self.players.index(self.get_by_uid(player.uid))] = player
+
+    def init_lvl(
+        self,
+        lvl: int,
+        field: list[list],
+        location_name: str,
+        location: list[list],
+        shop: list[dict],
+        players: list[dict],
+    ) -> None:
+        self.lvl = lvl
+        self.field = field
+        self.location_name = location_name
+        self.location = location
+        self.shop = [Item(**item) for item in shop]
+        self.players = [Player(**player) for player in players]

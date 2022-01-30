@@ -377,6 +377,71 @@ class NetworkClient:
             ),
         )
 
+    # ==== GAME =====
+
+    # === START GAME ===
+
+    def start_game(self) -> None:
+        self.sio.emit("start game", dict(room_id=self.room.room_id))
+
+    def on_loading_game(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "loading game",
+            lambda *response: (logger.info("Загрузка уровня"), callback()),
+        )
+
+    def on_start_game(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "start game",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Уровень <y>{response['lvl']}</y> загружен"
+                ),
+                self.room.init_lvl(**response),
+                callback(),
+            ),
+        )
+
+    # === ITEMS ===
+
+    def buy_item(self, item_index: int, fail_callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on("buy item", lambda response: fail_callback(response.get("msg")))
+        self.sio.emit(
+            "buy item", dict(room_id=self.room.room_id, item_index=item_index)
+        )
+
+    def on_buying_an_item(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "buying an item",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{response['player']['username']}</y> купил предмет "
+                    f"<y>{response['player']['character']['items'][-1]['name']}</y>"
+                ),
+                self.room.shop.remove(self.room.shop[response["item_index"]]),
+                self.room.update_player(Player(**response["player"])),
+                callback(),
+            ),
+        )
+
+    def remove_item(self, item_index: int) -> None:
+        self.sio.emit(
+            "remove item", dict(room_id=self.room.room_id, item_index=item_index)
+        )
+
+    def on_removing_an_item(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "removing an item",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{response['player']['username']}</y> продал предмет "
+                    f"<y>{response['item']['name']}</y>"
+                ),
+                self.room.update_player(Player(**response["player"])),
+                callback(),
+            ),
+        )
+
     # ===== TOOLS =====
 
     def disconnect(self) -> None:

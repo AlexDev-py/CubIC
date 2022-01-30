@@ -1,0 +1,330 @@
+"""
+
+Игровой клиента.
+
+"""
+
+from __future__ import annotations
+
+import os
+import typing as ty
+
+import pygame as pg
+
+from base import WidgetsGroup, Group, Label, Alert, Button, Anchor
+from database.field_types import Resolution
+from settings_alert import Settings
+from utils import load_image, FinishStatus, InfoAlert
+
+if ty.TYPE_CHECKING:
+    from network import NetworkClient
+    from game.player import Player
+
+
+class EscMenu(Alert):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+
+        super(EscMenu, self).__init__(
+            parent,
+            parent_size=resolution,
+            width=int(resolution.width * 0.5),
+            padding=20,
+            background=pg.Color("black"),
+            border_color=pg.Color("red"),
+            border_width=3,
+            fogging=100,
+        )
+
+        self.title = Label(
+            self,
+            x=0,
+            y=0,
+            width=self.rect.width,
+            text="Меню",
+            color=pg.Color("red"),
+            font=pg.font.Font(None, font_size),
+            anchor=Anchor.center,
+        )
+
+        self.continue_button = Button(
+            self,
+            x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
+            y=self.title.rect.bottom + 10,
+            width=int(self.rect.width * 0.8),
+            text="Продолжить",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("gray"),
+            font=pg.font.Font(None, font_size),
+            anchor=Anchor.center,
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: self.hide(),
+        )
+
+        self.settings_button = Button(
+            self,
+            x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
+            y=self.continue_button.rect.bottom + 10,
+            width=int(self.rect.width * 0.8),
+            text="Настройки",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("gray"),
+            font=pg.font.Font(None, font_size),
+            anchor=Anchor.center,
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: self.settings.show(),
+        )
+
+        self.exit_button = Button(
+            self,
+            x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
+            y=self.settings_button.rect.bottom + 10,
+            width=int(self.rect.width * 0.8),
+            text="Выйти",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("gray"),
+            font=pg.font.Font(None, font_size),
+            anchor=Anchor.center,
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: (
+                parent.network_client.leave_lobby(),
+                parent.__setattr__("finish_status", FinishStatus.exit_game),
+                parent.terminate(),
+            ),
+        )
+
+        self.settings = Settings(parent)
+
+
+class Field(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        height = width = min(resolution)
+        self.network_client = parent.network_client
+
+        self._field_image = pg.Surface((width, height))
+
+        super(Field, self).__init__(
+            parent,
+            x=lambda obj: resolution.width / 2 - obj.rect.width / 2,
+            y=lambda obj: resolution.height / 2 - obj.rect.height / 2,
+            width=width,
+            height=height,
+        )
+
+        self._generate_location_map()
+
+        self._label = Label(
+            self,
+            x=0,
+            y=0,
+            width=width,
+            height=height,
+            sprite=self._field_image,
+        )
+
+        self.update_field()
+
+    def _generate_location_map(self) -> None:
+        self.floors: list[tuple[pg.Surface, pg.Rect]] = []
+        self.walls: list[tuple[pg.Surface, pg.Rect]] = []
+
+        block_width, block_height = (
+            self.width / len(self.network_client.room.field[0]),
+            self.height / len(self.network_client.room.field),
+        )
+
+        for i, (board_line, location_line) in enumerate(
+            zip(self.network_client.room.field, self.network_client.room.location)
+        ):
+            y = block_height * i
+            for j, (board_block, location_block) in enumerate(
+                zip(board_line, location_line)
+            ):
+                x = block_width * j
+                rect = pg.Rect(x, y, block_width, block_height * 1.3)
+                if board_block is True:
+                    self.floors.append(
+                        (
+                            load_image(
+                                f"floor{location_block}.png",
+                                namespace=os.path.join(
+                                    os.environ["LOCATIONS_PATH"],
+                                    self.network_client.room.location_name,
+                                    "floors",
+                                ),
+                                size=(
+                                    round(block_width) + 1,
+                                    round(block_height * 1.3),
+                                ),
+                            ),
+                            rect,
+                        )
+                    )
+                else:
+                    self.walls.append(
+                        (
+                            load_image(
+                                f"wall{location_block}.png",
+                                namespace=os.path.join(
+                                    os.environ["LOCATIONS_PATH"],
+                                    self.network_client.room.location_name,
+                                    "walls",
+                                ),
+                                size=(
+                                    round(block_width) + 1,
+                                    round(block_height * 1.3),
+                                ),
+                            ),
+                            rect,
+                        )
+                    )
+
+    def update_field(self) -> None:
+        image = pg.Surface(self._field_image.get_size())
+        for floor_image, floor_rect in self.floors:
+            image.blit(floor_image, floor_rect)
+        for wall_image, wall_rect in self.walls:
+            image.blit(wall_image, wall_rect)
+
+        self.field_image = image
+
+    @property
+    def field_image(self) -> pg.Surface:
+        return self._field_image
+
+    @field_image.setter
+    def field_image(self, value: pg.Surface):
+        self._field_image = value
+        if hasattr(self, "_label"):
+            self._label.sprite = self._field_image
+
+
+class PlayerWidget(WidgetsGroup):
+    def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
+        font_size = int(os.environ["font_size"])
+        icon_size = int(os.environ["icon_size"])
+
+        self.player = player
+
+        y = 0 if index == 0 else parent.players[index - 1].rect.bottom + 10
+        super(PlayerWidget, self).__init__(parent, x=0, y=y, width=parent.rect.width)
+
+        self.icon = Label(
+            self,
+            x=0,
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            sprite=load_image(
+                player.character.icon,
+                namespace=os.environ["CHARACTERS_PATH"],
+                size=(icon_size, icon_size),
+            ),
+        )
+
+        self.username = Label(
+            self,
+            x=self.icon.rect.right + 5,
+            y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
+            text=player.username,
+            color=pg.Color("red"),
+            font=pg.font.Font(None, font_size),
+        )
+
+    def delete(self) -> None:
+        self.parent.remove(self)
+
+
+class PlayersMenu(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        self.network_client = parent.network_client
+
+        super(PlayersMenu, self).__init__(
+            parent,
+            x=0,
+            y=lambda obj: resolution.height / 2 - obj.rect.height / 2,
+            width=parent.field.rect.left,
+            height=resolution.height,
+            padding=20,
+        )
+
+        self.players: list[PlayerWidget] = []
+
+        self.update_players()
+
+    def update_players(self) -> None:
+        for player in self.players:
+            player.delete()
+
+        self.players.clear()
+
+        for i, player in enumerate(self.network_client.room.players):
+            self.players.append(PlayerWidget(self, player, index=i))
+
+
+class GameClientScreen(Group):
+    def __init__(self, network_client: NetworkClient = None):
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        self.running = True
+        self.finish_status = FinishStatus.close
+
+        super(GameClientScreen, self).__init__()
+        self.network_client = (
+            self.network_client if hasattr(self, "network_client") else network_client
+        )
+
+        # Если выставлено максимально возможное разрешение, открываем окно в полный экран
+        if resolution >= Resolution.converter(os.environ["MAX_RESOLUTION"]):
+            self.screen = pg.display.set_mode(resolution, pg.FULLSCREEN)
+        else:
+            self.screen = pg.display.set_mode(resolution)
+
+        self.field = Field(self)
+        self.players_menu = PlayersMenu(self)
+
+        self.esc_menu = EscMenu(self)
+        self.info_alert = InfoAlert(self, resolution, int(resolution.width * 0.7))
+
+        self.network_client.on_leaving_the_lobby(
+            callback=lambda msg: (
+                self.players_menu.update_players(),
+                self.info_alert.show_message(msg),
+            )
+        )
+
+    def exec(self) -> str:
+        while self.running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    self.terminate()
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        if self.esc_menu.parent.hidden:
+                            self.esc_menu.show()
+                        else:
+                            self.esc_menu.settings.hide()
+                            self.esc_menu.hide()
+                self.handle_event(event)
+            self.render()
+        return self.finish_status
+
+    def render(self) -> None:
+        self.screen.fill("white")
+        self.draw(self.screen)
+
+        pg.display.flip()
+
+    def terminate(self) -> None:
+        self.running = False

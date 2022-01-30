@@ -89,10 +89,23 @@ class Settings(Alert):
             f"<y>{str(Resolution.converter(os.environ['resolution']))}</y> "
             f"-> <c>{str(resolution)}</c>"
         )
+
         Config.update(resolution=resolution)
-        self._tab.parent.__class__.resolution = resolution
+        self.init_interface_size()
 
         self._tab.parent.__init__()
+
+    @classmethod
+    def init_interface_size(cls) -> None:
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        os.environ["font_size"] = str(
+            int(20 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
+        )  # Масштабируем размер текста в зависимости от размера окна
+
+        os.environ["icon_size"] = str(
+            int(25 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
+        )  # Масштабируем размер текста в зависимости от размера окна
 
 
 class ResolutionSetting(WidgetsGroup):

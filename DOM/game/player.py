@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import typing as ty
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
+from .character import Character
 from .character import characters
 
 if ty.TYPE_CHECKING:
     from ..network import User
-    from .character import Character
 
 
 @dataclass
@@ -15,17 +15,23 @@ class Player:
     uid: int
     username: str
     icon: int
-    coins: int = 0
-    character_id: int = ...
-    is_owner: True | False = False
     character: Character = ...
+    character_id: int = ...
+
+    is_owner: True | False = False
     ready: True | False = False
-    items: list = field(default_factory=list)
 
     def __post_init__(self):
+        if self.character is None:
+            self.character: Character = ...
+        elif isinstance(self.character, dict):
+            self.character = Character(
+                icon=characters[self.character_id].icon, **self.character
+            )
+
         if self.character_id is None:
             self.character_id: int = ...
-        elif isinstance(self.character_id, int):
+        elif isinstance(self.character_id, int) and self.character is ...:
             self.select_character(self.character_id)
 
     def select_character(self, character_id: int) -> None:

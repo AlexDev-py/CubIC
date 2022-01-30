@@ -399,4 +399,4 @@ class Lobby(WidgetsGroup):
         if not all(widget.player.ready for widget in self._players):
             self.info_alert.show_message("Не все игроки готовы")
         else:
-            print("ok")
+            self.network_client.start_game()

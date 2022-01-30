@@ -35,6 +35,9 @@ class FinishStatus:
     auth_failed: str = "auth_failed"  # Ошибка авторизации
     ok: str = "ok"  # Успешная загрузка
 
+    enter_game: str = "enter_game"  # Запуск игрового клиента
+    exit_game: str = "exit_game"  # Выход в меню
+
     fail_msg: str = ""  # Текст ошибки
 
     @classmethod
@@ -108,7 +111,42 @@ def load_image(
     return image
 
 
-class InfoAlert(Alert):
+class LoadingAlert(Alert):
+    def __init__(self, parent: Group, parent_size: tuple[int, int], width: int):
+        font_size = int(os.environ["font_size"])
+
+        super(LoadingAlert, self).__init__(
+            parent,
+            parent_size=parent_size,
+            width=width,
+            padding=20,
+            background=pg.Color("black"),
+            border_color=pg.Color("red"),
+            border_width=3,
+            fogging=100,
+        )
+
+        self.text = Text(
+            self,
+            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            y=0,
+            width=self.rect.width - self.padding * 2,
+            text="...",
+            color=pg.Color("red"),
+            font=pg.font.Font(None, font_size),
+            soft_split=True,
+        )
+
+    def show_message(self, text: str) -> None:
+        """
+        Изменяет текст и показывает виджет.
+        :param text: Текст сообщения.
+        """
+        self.text.text = text
+        self.show()
+
+
+class InfoAlert(LoadingAlert):
     """
     Информационный виджет.
     Текст и кнопка "ок", закрывающая сообщение.
@@ -122,49 +160,23 @@ class InfoAlert(Alert):
         :param parent_size: Размеры родительского виджета.
         :param width: Ширина информационного виджета.
         """
-        super(InfoAlert, self).__init__(
-            parent,
-            parent_size=parent_size,
-            width=width,
-            padding=20,
-            background=pg.Color("black"),
-            border_color=pg.Color("red"),
-            border_width=3,
-            fogging=100,
-        )
+        font_size = int(os.environ["font_size"])
 
-        self._text = Text(
-            self,
-            x=0,
-            y=0,
-            width=self.rect.width - self.padding * 2,
-            text="...",
-            color=pg.Color("red"),
-            font=pg.font.Font(None, 30),
-            soft_split=True,
-        )
+        super(InfoAlert, self).__init__(parent, parent_size, width)
 
         self.continue_button = Button(
             self,
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
-            y=lambda obj: self._text.rect.bottom + 20,
+            y=lambda obj: self.text.rect.bottom + 20,
             text="ок",
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, 25),
+            font=pg.font.Font(None, font_size),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
-
-    def show_message(self, text: str) -> None:
-        """
-        Изменяет текст и показывает виджет.
-        :param text: Текст сообщения.
-        """
-        self._text.text = text
-        self.show()
 
 
 class DropMenu(WidgetsGroup):
@@ -217,18 +229,20 @@ class DropMenu(WidgetsGroup):
         self.hide()
 
     def handle_event(self, event: pg.event.Event) -> None:
-        super(DropMenu, self).handle_event(event)
-        if event.type == pg.MOUSEBUTTONDOWN:
-            if event.button == pg.BUTTON_RIGHT:
-                # Открываем виджет
-                if self._widget.get_global_rect().collidepoint(event.pos):
-                    self.open(event.pos)
-                    return
-            # Скрываем виджет
-            if hasattr(event, "pos"):
-                if self.enabled:
-                    if not self.rect.collidepoint(event.pos):
-                        self.hide()
+        if self.enabled:
+            if not self.hidden:
+                super(DropMenu, self).handle_event(event)
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == pg.BUTTON_RIGHT:
+                    # Открываем виджет
+                    if self._widget.get_global_rect().collidepoint(event.pos):
+                        self.open(event.pos)
+                        return
+                # Скрываем виджет
+                if hasattr(event, "pos"):
+                    if not self.hidden:
+                        if not self.rect.collidepoint(event.pos):
+                            self.hide()
 
     def open(self, pos: tuple[int, int]) -> None:
         """
@@ -255,4 +269,3 @@ class DropMenu(WidgetsGroup):
         Скрывает и деактивирует меню.
         """
         super(DropMenu, self).hide()
-        self.disable()
