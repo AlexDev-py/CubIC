@@ -11,7 +11,7 @@ import typing as ty
 
 import pygame as pg
 
-from base import WidgetsGroup, Group, Label, Alert, Button, Anchor
+from base import WidgetsGroup, Group, Label, Alert, Button, Anchor, Line
 from database.field_types import Resolution
 from settings_alert import Settings
 from utils import load_image, FinishStatus, InfoAlert
@@ -208,6 +208,72 @@ class Field(WidgetsGroup):
             self._label.sprite = self._field_image
 
 
+class StatWidget(WidgetsGroup):
+    def __init__(self, parent: StatsWidget, x: int, y: int, icon: str, value: int):
+        icon_size = int(int(os.environ["icon_size"]) * 0.5)
+
+        super(StatWidget, self).__init__(parent, x=x, y=y, padding=5)
+
+        self.icon = Label(
+            self,
+            x=0,
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            sprite=load_image(
+                icon, namespace=os.environ["UI_ICONS_PATH"], size=(icon_size, icon_size)
+            ),
+        )
+
+        self.value = Label(
+            self,
+            x=self.icon.rect.right + 5,
+            y=lambda obj: self.icon.height / 2 - obj.rect.height / 2,
+            text=str(value),
+            color=pg.Color("red"),
+            font=pg.font.Font(None, int(icon_size * 1.4)),
+        )
+
+
+class StatsWidget(WidgetsGroup):
+    def __init__(self, parent: PlayerWidget):
+        super(StatsWidget, self).__init__(
+            parent,
+            x=0,
+            y=parent.line.rect.bottom + 5,
+            width=int(parent.width / 2),
+        )
+
+        self.stats: list[StatWidget] = []
+
+        self.hp = self.add_stat("hp.png", parent.player.character.hp)
+        self.damage = self.add_stat("damage.png", parent.player.character.damage)
+        self.attack_range = self.add_stat(
+            "attack_range.png", parent.player.character.attack_range
+        )
+        self.armor = self.add_stat("armor.png", parent.player.character.armor)
+        self.move_speed = self.add_stat(
+            "move_speed.png", parent.player.character.move_speed
+        )
+        self.life_abduction = self.add_stat(
+            "life_abduction.png", parent.player.character.life_abduction
+        )
+
+    def add_stat(self, icon: str, value: int) -> StatWidget:
+        if not len(self.stats):
+            x = y = 0
+        else:
+            y = self.stats[-1].rect.y
+            x = self.stats[-1].rect.right
+            if x + self.stats[-1].rect.width > self.rect.width:
+                x = 0
+                y += self.stats[-1].rect.height
+
+        widget = StatWidget(self, x, y, icon, value)
+        self.stats.append(widget)
+        return widget
+
+
 class PlayerWidget(WidgetsGroup):
     def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
         font_size = int(os.environ["font_size"])
@@ -239,6 +305,17 @@ class PlayerWidget(WidgetsGroup):
             color=pg.Color("red"),
             font=pg.font.Font(None, font_size),
         )
+
+        self.line = Line(
+            self,
+            x=0,
+            y=self.icon.rect.bottom + 5,
+            width=self.rect.width,
+            height=2,
+            color=pg.Color("red"),
+        )
+
+        self.stats = StatsWidget(self)
 
     def delete(self) -> None:
         self.parent.remove(self)

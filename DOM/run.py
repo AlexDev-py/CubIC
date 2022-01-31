@@ -33,7 +33,11 @@ os.environ["AUTH_PATH"] = os.path.join(os.environ["APP_DIR"], ".auth")
 # Путь к директории с персонажами
 os.environ["CHARACTERS_PATH"] = os.path.join(os.environ["APP_DIR"], "characters")
 # Путь к директории с иконками пользователей
-os.environ["USER_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "icons")
+os.environ["USER_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "user_icons")
+# Путь к директории с иконками интерфейса
+os.environ["UI_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "ui_icons")
+# Путь к директории с иконками предметов
+os.environ["ITEMS_PATH"] = os.path.join(os.environ["APP_DIR"], "items")
 # Путь к директории с локациями
 os.environ["LOCATIONS_PATH"] = os.path.join(os.environ["APP_DIR"], "locations")
 # Версия приложения

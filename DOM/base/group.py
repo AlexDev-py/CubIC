@@ -36,7 +36,10 @@ class Group(Object, ABC):
                     if not isinstance(widget, Group):
                         self.update()  # Обновляем группу
                         if self.parent:
-                            self.parent.update()
+                            parent = self.parent
+                            while parent.parent is not None:
+                                parent = parent.parent
+                            parent.update()
 
     def remove(self, obj: Object) -> None:
         """
