@@ -24,6 +24,8 @@ class Login(WidgetsGroup):
     """
 
     def __init__(self, parent: AuthScreen):
+        font = os.environ.get("font")
+
         super(Login, self).__init__(
             parent, x=0, y=0, width=parent.SIZE[0], height=parent.SIZE[1], padding=20
         )
@@ -34,7 +36,7 @@ class Login(WidgetsGroup):
             y=int(parent.SIZE[1] * 0.2),
             text="Авторизация",
             color=pg.Color("red"),
-            font=pg.font.Font(None, 40),
+            font=pg.font.Font(font, 40),
         )
 
         self.login = InputBox(
@@ -45,7 +47,7 @@ class Login(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(None, 30),
+            font=pg.font.Font(font, 30),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
@@ -59,7 +61,7 @@ class Login(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(None, 30),
+            font=pg.font.Font(font, 30),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
@@ -74,7 +76,7 @@ class Login(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, 25),
+            font=pg.font.Font(font, 25),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.auth(parent),
@@ -117,6 +119,8 @@ class Signup(WidgetsGroup):
     """
 
     def __init__(self, parent: AuthScreen):
+        font = os.environ.get("font")
+
         super(Signup, self).__init__(
             parent, x=0, y=0, width=parent.SIZE[0], height=parent.SIZE[1], padding=20
         )
@@ -127,7 +131,7 @@ class Signup(WidgetsGroup):
             y=int(parent.SIZE[1] * 0.1),
             text="Регистрация",
             color=pg.Color("red"),
-            font=pg.font.Font(None, 40),
+            font=pg.font.Font(font, 40),
         )
 
         self.login = InputBox(
@@ -138,7 +142,7 @@ class Signup(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(None, 30),
+            font=pg.font.Font(font, 30),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
@@ -153,7 +157,7 @@ class Signup(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(None, 30),
+            font=pg.font.Font(font, 30),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
@@ -168,7 +172,7 @@ class Signup(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(None, 30),
+            font=pg.font.Font(font, 30),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
@@ -183,7 +187,7 @@ class Signup(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, 25),
+            font=pg.font.Font(font, 25),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.auth(parent),

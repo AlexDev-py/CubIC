@@ -40,6 +40,9 @@ os.environ["UI_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "ui_icons")
 os.environ["ITEMS_PATH"] = os.path.join(os.environ["APP_DIR"], "items")
 # Путь к директории с локациями
 os.environ["LOCATIONS_PATH"] = os.path.join(os.environ["APP_DIR"], "locations")
+# Шрифт
+if os.path.isfile(font_path := os.path.join(os.environ["APP_DIR"], "font.ttf")):
+    os.environ["FONT"] = font_path
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
 # Сервер

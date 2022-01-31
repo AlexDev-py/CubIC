@@ -16,6 +16,7 @@ class Alert(WidgetsGroup):
     def __init__(
         self,
         parent: Group,
+        name: str = None,
         *,
         parent_size: tuple[int, int],
         width: int | CordFunction | None = None,
@@ -30,6 +31,7 @@ class Alert(WidgetsGroup):
         Виджет диалогового окна.
         :param parent: Объект к которому принадлежит виджет.
         :type parent: Объект класса, родителем которого является Group.
+        :param name: Название объекта.
         :param parent_size: Размеры родительского виджета
         :param width: Ширина виджета.
         :type width: Число или функция вычисляющая ширину.
@@ -58,6 +60,7 @@ class Alert(WidgetsGroup):
 
         super(Alert, self).__init__(
             self._tab,
+            name,
             x=lambda obj: round(self._tab.rect.width / 2 - obj.rect.width / 2),
             y=lambda obj: round(self._tab.rect.height / 2 - obj.rect.height / 2),
             width=width,
@@ -75,7 +78,7 @@ class Alert(WidgetsGroup):
         logger.opt(colors=True).debug(f"Диалог <y>{self}</y> открыт")
         self._tab.show()
         self._tab.enable()
-        for widget in self._tab.parent.widgets:
+        for widget in self._tab.parent.objects:
             if widget != self._tab:
                 widget.disable()
 
@@ -86,6 +89,6 @@ class Alert(WidgetsGroup):
         logger.opt(colors=True).debug(f"Диалог <y>{self}</y> закрыт")
         self._tab.hide()
         self._tab.disable()
-        for widget in self._tab.parent.widgets:
+        for widget in self._tab.parent.objects:
             if widget != self._tab:
                 widget.enable()

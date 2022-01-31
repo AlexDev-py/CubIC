@@ -25,6 +25,7 @@ class Settings(Alert):
     def __init__(self, parent: Group):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         super(Settings, self).__init__(
             parent,
@@ -44,7 +45,7 @@ class Settings(Alert):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, int(font_size * 0.7)),
+            font=pg.font.Font(font, int(font_size * 0.7)),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
@@ -100,7 +101,7 @@ class Settings(Alert):
         resolution = Resolution.converter(os.environ["resolution"])
 
         os.environ["font_size"] = str(
-            int(20 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
+            int(13 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
         )  # Масштабируем размер текста в зависимости от размера окна
 
         os.environ["icon_size"] = str(
@@ -116,6 +117,7 @@ class ResolutionSetting(WidgetsGroup):
     def __init__(self, parent: Settings, y: int):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         super(ResolutionSetting, self).__init__(parent, x=0, y=y)
 
@@ -125,7 +127,7 @@ class ResolutionSetting(WidgetsGroup):
             y=0,
             text="Разрешение:",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.btn_low = Button(
@@ -136,7 +138,7 @@ class ResolutionSetting(WidgetsGroup):
             padding=2,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, int(font_size * 0.7)),
+            font=pg.font.Font(font, int(font_size * 0.7)),
             border_color=pg.Color("red"),
             border_width=2,
         )
@@ -147,7 +149,7 @@ class ResolutionSetting(WidgetsGroup):
             y=lambda obj: round(self.btn_low.rect.height / 2 - obj.rect.height / 2),
             text=str(resolution),
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.btn_up = Button(
@@ -158,7 +160,7 @@ class ResolutionSetting(WidgetsGroup):
             padding=2,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, int(font_size * 0.7)),
+            font=pg.font.Font(font, int(font_size * 0.7)),
             border_color=pg.Color("red"),
             border_width=2,
         )

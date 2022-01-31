@@ -112,11 +112,20 @@ def load_image(
 
 
 class LoadingAlert(Alert):
-    def __init__(self, parent: Group, parent_size: tuple[int, int], width: int):
+    def __init__(
+        self,
+        parent: Group,
+        name: str = None,
+        *,
+        parent_size: tuple[int, int],
+        width: int,
+    ):
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         super(LoadingAlert, self).__init__(
             parent,
+            name,
             parent_size=parent_size,
             width=width,
             padding=20,
@@ -133,7 +142,7 @@ class LoadingAlert(Alert):
             width=self.rect.width - self.padding * 2,
             text="...",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             soft_split=True,
         )
 
@@ -152,17 +161,28 @@ class InfoAlert(LoadingAlert):
     Текст и кнопка "ок", закрывающая сообщение.
     """
 
-    def __init__(self, parent: Group, parent_size: tuple[int, int], width: int):
+    def __init__(
+        self,
+        parent: Group,
+        name: str = None,
+        *,
+        parent_size: tuple[int, int],
+        width: int,
+    ):
         """
         Виджет, отображающий информационное сообщение.
         :param parent: Объект к которому принадлежит виджет.
         :type parent: Объект класса, родителем которого является Group.
+        :param name: Название объекта.
         :param parent_size: Размеры родительского виджета.
         :param width: Ширина информационного виджета.
         """
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
-        super(InfoAlert, self).__init__(parent, parent_size, width)
+        super(InfoAlert, self).__init__(
+            parent, name, parent_size=parent_size, width=width
+        )
 
         self.continue_button = Button(
             self,
@@ -172,7 +192,7 @@ class InfoAlert(LoadingAlert):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
@@ -183,6 +203,7 @@ class DropMenu(WidgetsGroup):
     def __init__(
         self,
         parent: WidgetsGroup,
+        name: str = None,
         *,
         width: int | CordFunction | None = None,
         height: int | CordFunction | None = None,
@@ -196,6 +217,7 @@ class DropMenu(WidgetsGroup):
         Активируется по нажатию правой кнопкой мыши по определенному виджету.
         :param parent: Объект к которому принадлежит виджет.
         :type parent: Объект класса, родителем которого является WidgetsGroup.
+        :param name: Название объекта.
         :param width: Ширина виджета.
         :type width: Число или функция вычисляющая ширину.
         :param height: Высота виджета.
@@ -215,6 +237,7 @@ class DropMenu(WidgetsGroup):
 
         super(DropMenu, self).__init__(
             _parent,
+            name,
             x=0,
             y=0,
             width=width,
@@ -269,3 +292,6 @@ class DropMenu(WidgetsGroup):
         Скрывает и деактивирует меню.
         """
         super(DropMenu, self).hide()
+
+    def __setattr__(self, key, value):
+        object.__setattr__(self, key, value)

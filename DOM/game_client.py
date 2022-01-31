@@ -25,6 +25,7 @@ class EscMenu(Alert):
     def __init__(self, parent: GameClientScreen):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         super(EscMenu, self).__init__(
             parent,
@@ -44,7 +45,7 @@ class EscMenu(Alert):
             width=self.rect.width,
             text="Меню",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
         )
 
@@ -57,7 +58,7 @@ class EscMenu(Alert):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("gray"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
             border_color=pg.Color("red"),
             border_width=2,
@@ -73,7 +74,7 @@ class EscMenu(Alert):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("gray"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
             border_color=pg.Color("red"),
             border_width=2,
@@ -89,7 +90,7 @@ class EscMenu(Alert):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("gray"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
             border_color=pg.Color("red"),
             border_width=2,
@@ -211,6 +212,7 @@ class Field(WidgetsGroup):
 class StatWidget(WidgetsGroup):
     def __init__(self, parent: StatsWidget, x: int, y: int, icon: str, value: int):
         icon_size = int(int(os.environ["icon_size"]) * 0.5)
+        font = os.environ.get("font")
 
         super(StatWidget, self).__init__(parent, x=x, y=y, padding=5)
 
@@ -231,7 +233,7 @@ class StatWidget(WidgetsGroup):
             y=lambda obj: self.icon.height / 2 - obj.rect.height / 2,
             text=str(value),
             color=pg.Color("red"),
-            font=pg.font.Font(None, int(icon_size * 1.4)),
+            font=pg.font.Font(font, icon_size),
         )
 
 
@@ -278,11 +280,18 @@ class PlayerWidget(WidgetsGroup):
     def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
+        font = os.environ.get("font")
 
         self.player = player
 
-        y = 0 if index == 0 else parent.players[index - 1].rect.bottom + 10
-        super(PlayerWidget, self).__init__(parent, x=0, y=y, width=parent.rect.width)
+        y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
+        super(PlayerWidget, self).__init__(
+            parent,
+            x=0,
+            y=y,
+            width=parent.rect.width - parent.padding * 2,
+            background=pg.Color("gray"),
+        )
 
         self.icon = Label(
             self,
@@ -303,7 +312,7 @@ class PlayerWidget(WidgetsGroup):
             y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
             text=player.username,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.line = Line(
@@ -333,7 +342,7 @@ class PlayersMenu(WidgetsGroup):
             y=lambda obj: resolution.height / 2 - obj.rect.height / 2,
             width=parent.field.rect.left,
             height=resolution.height,
-            padding=20,
+            padding=5,
         )
 
         self.players: list[PlayerWidget] = []
@@ -372,7 +381,9 @@ class GameClientScreen(Group):
         self.players_menu = PlayersMenu(self)
 
         self.esc_menu = EscMenu(self)
-        self.info_alert = InfoAlert(self, resolution, int(resolution.width * 0.7))
+        self.info_alert = InfoAlert(
+            self, parent_size=resolution, width=int(resolution.width * 0.7)
+        )
 
         self.network_client.on_leaving_the_lobby(
             callback=lambda msg: (

@@ -15,7 +15,8 @@ if ty.TYPE_CHECKING:
 class WidgetsGroup(Group, BaseWidget):
     def __init__(
         self,
-        parent: Group,
+        parent: Group | None,
+        name: str = None,
         *,
         x: int | CordFunction,
         y: int | CordFunction,
@@ -32,6 +33,7 @@ class WidgetsGroup(Group, BaseWidget):
         Объединяет несколько объектов.
         :param parent: Объект к которому принадлежит виджет.
         :type parent: Объект класса, родителем которого является Group.
+        :param name: Название объекта.
         :param x: Координата x.
         :type x: Число или функция вычисляющая координату.
         :param y: Координата y.
@@ -55,13 +57,13 @@ class WidgetsGroup(Group, BaseWidget):
         self._border_color = border_color
         self._border_width = border_width
 
-        Group.__init__(self, parent, hidden=hidden)
-        BaseWidget.__init__(self, parent, hidden=hidden)
+        Group.__init__(self, parent, name, hidden=hidden)
+        BaseWidget.__init__(self, parent, name, hidden=hidden)
 
     def _get_rect(self) -> pg.Rect:
         widgets = [
             obj
-            for obj in self.widgets
+            for obj in self.objects
             if isinstance(obj, BaseWidget) and hasattr(obj, "rect")
         ]
         if widgets:
@@ -107,8 +109,9 @@ class WidgetsGroup(Group, BaseWidget):
             rect.height -= int(self.border_width / 2)
             pg.draw.rect(bg_image, self._border_color, rect, self.border_width)
 
-        for widget in self.widgets:
-            widget.draw(content_image)
+        for widget in self.objects:
+            if not isinstance(widget, Group):
+                widget.draw(content_image)
 
         rect = bg_image.get_rect()
         rect.x = rect.y = self.padding + self.border_width
@@ -117,13 +120,22 @@ class WidgetsGroup(Group, BaseWidget):
         return bg_image
 
     def update(self, *args, **kwargs) -> None:
-        if hasattr(self, "_widgets"):
-            for widget in self.widgets:
+        if hasattr(self, "_objects"):
+            for widget in self.objects:
                 widget.update(*args, **kwargs)
             BaseWidget.update(self, *args, **kwargs)
 
     def draw(self, surface: pg.Surface) -> None:
-        BaseWidget.draw(self, surface)
+        if not self.hidden:
+            if hasattr(self, "image"):
+                surface.blit(self.image, self.get_global_rect())
+                for obj in self.objects:
+                    if isinstance(obj, Group):
+                        obj.draw(surface)
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        if hasattr(self, "_objects"):
+            super(WidgetsGroup, self).handle_event(event)
 
     @property
     def x(self) -> int:

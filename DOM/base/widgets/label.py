@@ -17,6 +17,7 @@ class Label(BaseWidget):
     def __init__(
         self,
         parent: Group,
+        name: str = None,
         *,
         x: int | CordFunction,
         y: int | CordFunction,
@@ -36,6 +37,7 @@ class Label(BaseWidget):
         Виджет однострочного текста.
         :param parent: Объект к которому принадлежит виджет.
         :type parent: Объект класса, родителем которого является Group.
+        :param name: Название объекта.
         :param x: Координата x.
         :type x: Число или функция вычисляющая координату.
         :param y: Координата y.
@@ -75,7 +77,7 @@ class Label(BaseWidget):
 
         self._rendered_text = self._render_text()
 
-        super(Label, self).__init__(parent)
+        super(Label, self).__init__(parent, name)
 
     def _get_rect(self) -> pg.Rect:
         self.rect = pg.Rect(

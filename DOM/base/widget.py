@@ -10,6 +10,7 @@ import typing as ty
 from abc import ABC, abstractmethod
 
 import pygame as pg
+from loguru import logger
 
 from .object import Object
 
@@ -18,13 +19,16 @@ if ty.TYPE_CHECKING:
 
 
 class BaseWidget(Object, ABC):
-    def __init__(self, parent: Group, *, hidden: True | False = False):
+    def __init__(
+        self, parent: Group | None, name: str = None, *, hidden: True | False = False
+    ):
         """
         Базовый виджет.
         :param parent: Объект, которому принадлежит данный объект.
+        :param name: Название объекта.
         :param hidden: Будет ли виджет скрыт.
         """
-        Object.__init__(self, parent, hidden=hidden)
+        Object.__init__(self, parent, name, hidden=hidden)
 
         self.rect: pg.Rect = self._get_rect()
         self.image: pg.Surface = self._render()
@@ -47,6 +51,7 @@ class BaseWidget(Object, ABC):
         """
         Обновляет виджет.
         """
+        logger.opt(colors=True).trace(f"update {self}")
         self.rect = self._get_rect()
         self.image = self._render()
 

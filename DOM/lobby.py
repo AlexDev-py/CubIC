@@ -35,11 +35,13 @@ class LobbyInvite(DropMenu):
         """
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         self.room_id = room_id
 
         super(LobbyInvite, self).__init__(
             parent,
+            f"{room_id}-LobbyInvite",
             width=int(resolution.width * 0.3),
             padding=20,
             background=pg.Color("gray"),
@@ -47,23 +49,25 @@ class LobbyInvite(DropMenu):
 
         self.msg = Text(
             self,
+            f"{self.name}-Label",
             x=0,
             y=0,
             width=self.width - self.padding * 2,
             text=msg,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             soft_split=True,
         )
 
         self.accept = Button(
             self,
+            f"{self.name}-AcceptButton",
             x=0,
             y=self.msg.rect.bottom + 20,
             text="Принять",
             padding=3,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             active_background=pg.Color("gray"),
             border_color=pg.Color("red"),
             border_width=3,
@@ -71,12 +75,13 @@ class LobbyInvite(DropMenu):
 
         self.cancel = Button(
             self,
+            f"{self.name}-CancelButton",
             x=self.accept.rect.right + 5,
             y=self.msg.rect.bottom + 20,
             text=" Х ",
             padding=3,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             active_background=pg.Color("gray"),
             border_color=pg.Color("red"),
             border_width=3,
@@ -94,27 +99,28 @@ class LobbyInvite(DropMenu):
 
 
 class PlayerWidget(WidgetsGroup):
-    def __init__(self, parent: WidgetsGroup, player: Player, y: int):
+    def __init__(self, player: Player, y: int):
         """
         Виджет игрока в лобби.
-        :param parent: Объект к которому принадлежит виджет.
-        :type parent: Объект класса, родителем которого является Group.
         :param player: Игрок.
         :param y: Координата Y.
         """
         icon_size = int(os.environ["icon_size"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         self.player = player
 
         super(PlayerWidget, self).__init__(
-            parent,
+            None,
+            f"{player.username}-PlayerWidget",
             x=0,
             y=y,
         )
 
         self.icon = Label(
             self,
+            f"{self.name}-IconLabel",
             x=0,
             y=0,
             width=icon_size,
@@ -129,20 +135,22 @@ class PlayerWidget(WidgetsGroup):
 
         self.username = Label(
             self,
+            f"{self.name}-UsernameLabel",
             x=self.icon.rect.w + 10,
             y=lambda obj: round(self.rect.height / 2 - obj.rect.height - 2),
             text=player.username,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.status = Label(
             self,
+            f"{self.name}-StatusLabel",
             x=self.icon.rect.w + 10,
             y=round(self.rect.height / 2 + 2),
             text="Лидер" if player.is_owner else "Не готов...",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         if player.character is not ...:
@@ -163,22 +171,26 @@ class PlayerWidget(WidgetsGroup):
 class Buttons(WidgetsGroup):
     def __init__(self, parent: Lobby):
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         super(Buttons, self).__init__(
-            parent,
+            None,
+            "LobbyButtons",
             x=lambda obj: round(parent.rect.w / 2 - obj.rect.w / 2),
             y=lambda obj: parent.rect.height - obj.rect.height,
             padding=20,
         )
+        parent.add(self)
 
         self.leave_lobby_button = Button(
             self,
+            "LeaveLobbyButton",
             x=0,
             y=0,
             text=" Х ",
             padding=3,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             active_background=pg.Color("gray"),
             border_color=pg.Color("red"),
             border_width=3,
@@ -189,12 +201,13 @@ class Buttons(WidgetsGroup):
         ).is_owner
         self.ready_button = Button(
             self,
+            "ReadyButton",
             x=self.leave_lobby_button.rect.w + 10,
             y=0,
             text="Начать игру" if is_owner else "Готов",
             padding=3,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             active_background=pg.Color("gray"),
             border_color=pg.Color("red"),
             border_width=3,
@@ -207,14 +220,18 @@ class CharacterButton(WidgetsGroup):
     ):
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
+        font = os.environ.get("font")
 
         self.pressed = False
         self.character_id = character_id
 
-        super(CharacterButton, self).__init__(parent, x=0, y=y)
+        super(CharacterButton, self).__init__(
+            parent, f"{character.name}-Widget", x=0, y=y
+        )
 
         self.icon = Label(
             self,
+            f"{self.name}-IconLabel",
             x=0,
             y=lambda obj: round(self.rect.height / 2 - obj.rect.height / 2),
             width=icon_size,
@@ -228,11 +245,12 @@ class CharacterButton(WidgetsGroup):
 
         self.name = Label(
             self,
+            f"{self.name}-NameLabel",
             x=self.icon.rect.right + 10,
             y=lambda obj: round(self.rect.height / 2 - obj.rect.height / 2),
             text=character.name,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
     def handle_event(self, event: pg.event.Event) -> None:
@@ -257,16 +275,20 @@ class CharactersMenu(WidgetsGroup):
     def __init__(self, parent: Lobby):
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
+        font = os.environ.get("font")
 
-        super(CharactersMenu, self).__init__(parent, x=0, y=0, padding=20)
+        super(CharactersMenu, self).__init__(
+            parent, "CharactersMenu", x=0, y=0, padding=20
+        )
 
         self.label = Label(
             self,
+            f"{self.name}-TitleLabel",
             x=0,
             y=0,
             text="Выбор персонажа",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.characters = []
@@ -295,6 +317,7 @@ class Lobby(WidgetsGroup):
 
         super(Lobby, self).__init__(
             parent,
+            "Lobby",
             x=0,
             y=0,
             width=int(resolution.width * 0.8),
@@ -350,6 +373,7 @@ class Lobby(WidgetsGroup):
 
         self.players = WidgetsGroup(
             self,
+            "Lobby-PlayersList",
             x=lambda obj: self.rect.width - obj.rect.width,
             y=0,
             padding=20,
@@ -357,9 +381,10 @@ class Lobby(WidgetsGroup):
 
         y = 0
         for player in self.network_client.room.players:
-            player_widget = PlayerWidget(self.players, player, y)
+            player_widget = PlayerWidget(player, y)
             y = player_widget.rect.bottom + 20
             self._players.append(player_widget)
+        self.players.add(*self._players)
 
         self.buttons = Buttons(self)
 

@@ -27,9 +27,11 @@ class MenuButtons(WidgetsGroup):
     def __init__(self, parent: MenuScreen):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("FONT")
 
         super(MenuButtons, self).__init__(
             parent,
+            "MenuButtons",
             x=0,
             y=lambda obj: resolution.height - obj.rect.height,
             padding=20,
@@ -37,6 +39,7 @@ class MenuButtons(WidgetsGroup):
 
         self.create_lobby_button = Button(
             self,
+            "CreateLobbyButton",
             x=0,
             y=0,
             width=int(resolution.width * 0.15),
@@ -44,7 +47,7 @@ class MenuButtons(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color(0, 0, 0, 50),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: (
@@ -57,6 +60,7 @@ class MenuButtons(WidgetsGroup):
 
         self.settings_button = Button(
             self,
+            "SettingsButton",
             x=0,
             y=lambda btn: self.create_lobby_button.rect.y + 20 + btn.rect.h,
             width=int(resolution.width * 0.15),
@@ -64,7 +68,7 @@ class MenuButtons(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color(0, 0, 0, 50),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: parent.setting.show(),
@@ -72,6 +76,7 @@ class MenuButtons(WidgetsGroup):
 
         self.exit_button = Button(
             self,
+            "ExitGameButton",
             x=0,
             y=lambda btn: self.settings_button.rect.y + 20 + btn.rect.h,
             width=int(resolution.width * 0.15),
@@ -79,7 +84,7 @@ class MenuButtons(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color(0, 0, 0, 50),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: parent.terminate(),
@@ -91,7 +96,7 @@ class MenuScreen(Group):
         resolution = Resolution.converter(os.environ["resolution"])
         Settings.init_interface_size()
 
-        super(MenuScreen, self).__init__()
+        super(MenuScreen, self).__init__(name="MenuScreen")
 
         self.finish_status: str = FinishStatus.close
 
@@ -112,11 +117,15 @@ class MenuScreen(Group):
 
         self.info_alert = InfoAlert(
             self,
+            "MenuInfoAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
         )
         self.loading_alert = LoadingAlert(
-            self, parent_size=resolution, width=int(resolution.width * 0.5)
+            self,
+            "MenuLoadingAlert",
+            parent_size=resolution,
+            width=int(resolution.width * 0.5),
         )
 
         self.running = True

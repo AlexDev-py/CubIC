@@ -27,7 +27,7 @@ class StartAppScreen(Group):
     def __init__(self, network_client: NetworkClient):
         logger.trace("Инициализация окна загрузки клиента")
 
-        super(StartAppScreen, self).__init__()
+        super(StartAppScreen, self).__init__(name="StartAppScreen")
 
         self.network_client = network_client
 
@@ -37,6 +37,7 @@ class StartAppScreen(Group):
 
         self.label = Label(
             self,
+            "DOM label",
             x=lambda lb: self.SIZE[0] / 2 - lb.rect.w / 2,
             y=lambda lb: self.SIZE[1] / 2 - lb.rect.h,
             text="DOM",
@@ -49,6 +50,7 @@ class StartAppScreen(Group):
 
         self.status = Text(
             self,
+            "Status text",
             x=lambda lb: self.SIZE[0] / 2 - lb.rect.w / 2,
             y=self.label.rect.bottom + 20,
             width=self.SIZE[0] - 40,

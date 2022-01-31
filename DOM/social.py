@@ -37,19 +37,28 @@ if ty.TYPE_CHECKING:
 
 
 class FriendDropMenu(DropMenu):
-    def __init__(self, parent: UserWidget, can_invite: ty.Callable[[], True | False]):
+    def __init__(
+        self,
+        parent: UserWidget,
+        name: str = None,
+        *,
+        can_invite: ty.Callable[[], True | False] = False,
+    ):
         """
         Выпадающее меню для виджета друга.
         :param parent: ...
+        :param name: Название объекта.
         :param can_invite: Может ли пользователь пригласить этого друга в группу.
         :type can_invite: Функция, которая возвращает True или False.
         """
         font_size = int(os.environ["font_size"])  # Размер текста
+        font = os.environ.get("font")
 
         self.can_invite = can_invite
 
         super(FriendDropMenu, self).__init__(
             parent,
+            name,
             background=pg.Color("gray"),
             border_color=pg.Color("red"),
             border_width=2,
@@ -57,24 +66,26 @@ class FriendDropMenu(DropMenu):
 
         self.delete_friend_button = Button(
             self,
+            f"{name}-DeleteFriendButton",
             x=0,
             y=0,
             text="Удалить друга",
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("black"),
-            font=pg.font.Font(None, int(font_size * 0.6)),
+            font=pg.font.Font(font, int(font_size * 0.6)),
         )
 
         self.send_invite_button = Button(
             self,
+            f"{name}-SendInviteButton",
             x=0,
             y=self.delete_friend_button.rect.bottom,
             text="Пригласить в группу",
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("black"),
-            font=pg.font.Font(None, int(font_size * 0.6)),
+            font=pg.font.Font(font, int(font_size * 0.6)),
         )
 
     def show(self) -> None:
@@ -93,7 +104,7 @@ class FriendDropMenu(DropMenu):
 class UserWidget(WidgetsGroup):
     def __init__(
         self,
-        parent: Group,
+        parent: Group | None,
         x: int | CordFunction,
         y: int | CordFunction,
         user: User,
@@ -117,11 +128,13 @@ class UserWidget(WidgetsGroup):
         """
         font_size = font_size or int(os.environ["font_size"])
         icon_size = icon_size or int(os.environ["icon_size"])
+        font = os.environ.get("font")
 
         self.user = user
 
         super(UserWidget, self).__init__(
             parent,
+            f"{user.username}-UserWidget",
             x=x,
             y=y,
             width=width,
@@ -130,6 +143,7 @@ class UserWidget(WidgetsGroup):
 
         self.icon = Label(
             self,
+            f"{user.username}-IconLabel",
             x=0,
             y=0,
             width=icon_size,
@@ -145,20 +159,22 @@ class UserWidget(WidgetsGroup):
         # TODO: Ник может быть слишком длинным
         self.username = Label(
             self,
+            f"{user.username}-UsernameLabel",
             x=self.icon.rect.right + 30,
             y=0,
             text=user.username,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.status = Label(
             self,
+            f"{user.username}-StatusLabel",
             x=self.icon.rect.right + 30,
             y=self.username.rect.bottom + 5,
             text=user.status.text,
             color=pg.Color(user.status.color),
-            font=pg.font.Font(None, int(font_size * 0.8)),
+            font=pg.font.Font(font, int(font_size * 0.8)),
         )
 
     def set_status(self, status: UserStatus) -> None:
@@ -166,6 +182,9 @@ class UserWidget(WidgetsGroup):
         Изменяет статус пользователя.
         :param status: Новый статус.
         """
+        logger.opt(colors=True).info(
+            f"{self.user.username} <le>status</le>=<y>{status.text}</y>"
+        )
         self.status.text = status.text
         self.status.color = status.color
 
@@ -190,12 +209,10 @@ class FriendWidget(UserWidget):
         self.social = parent
 
         super(FriendWidget, self).__init__(
-            parent, x=0, y=y, user=user, font_size=font_size
+            None, x=0, y=y, user=user, font_size=font_size
         )
 
-        self.drop_menu = FriendDropMenu(
-            self, can_invite=lambda: parent.network_client.room is not ...
-        )
+        self.drop_menu: FriendDropMenu = ...
 
     def delete(self) -> None:
         """
@@ -206,7 +223,7 @@ class FriendWidget(UserWidget):
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(FriendWidget, self).handle_event(event)
-        if event.type == ButtonClickEvent.type:
+        if event.type == ButtonClickEvent.type and self.drop_menu is not ...:
             # Обработка нажатий на кнопки в выпадающем меню
             if event.obj == self.drop_menu.delete_friend_button:
                 self.social.network_client.delete_friend(uid=self.user.uid)
@@ -240,6 +257,7 @@ class FriendRequestWidget(UserWidget):
             и объект этого виджета.
         """
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         super(FriendRequestWidget, self).__init__(
             parent,
@@ -251,25 +269,27 @@ class FriendRequestWidget(UserWidget):
 
         self.ok_button = Button(
             self,
+            f"{user.username}-OkButton",
             x=0,
             y=self.icon.rect.bottom + 5,
             text=" + ",
             padding=1,
             color=pg.Color("red"),
             active_background=pg.Color("gray"),
-            font=pg.font.Font(None, int(font_size * 0.8)),
+            font=pg.font.Font(font, int(font_size * 0.8)),
             callback=lambda event: callback("ok", self),
         )
 
         self.cancel_button = Button(
             self,
+            f"{user.username}-CancelButton",
             x=self.ok_button.rect.right + 5,
             y=self.icon.rect.bottom + 5,
             text=" - ",
             padding=1,
             color=pg.Color("red"),
             active_background=pg.Color("gray"),
-            font=pg.font.Font(None, int(font_size * 0.8)),
+            font=pg.font.Font(font, int(font_size * 0.8)),
             callback=lambda event: callback("cancel", self),
         )
 
@@ -284,11 +304,13 @@ class FriendRequests(Alert):
         """
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
 
         self.network_client = network_client
 
         super(FriendRequests, self).__init__(
             parent,
+            "FriendRequestsAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
             height=int(resolution.height * 0.8),
@@ -298,18 +320,22 @@ class FriendRequests(Alert):
         )
 
         self.info_alert = InfoAlert(
-            parent, parent_size=resolution, width=int(resolution.width * 0.5)
+            parent,
+            "FriendRequestsInfoAlert",
+            parent_size=resolution,
+            width=int(resolution.width * 0.5),
         )
 
         self.exit_button = Button(
             self,
+            "FriendRequestsExitButton",
             x=0,
             y=0,
             text=" X ",
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(None, int(font_size * 0.7)),
+            font=pg.font.Font(font, int(font_size * 0.7)),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
@@ -317,24 +343,26 @@ class FriendRequests(Alert):
 
         self.title = Label(
             self,
+            "FriendRequestsTitleLabel",
             x=lambda obj: round(
                 self.rect.width / 2 - obj.rect.width / 2 - self.padding * 2
             ),
             y=0,
             text="Добавить друзей",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.username_input = InputBox(
             self,
+            "FriendRequestInputBox",
             x=0,
             y=self.title.rect.bottom + 30,
             description="Имя пользователя",
             width=int(self.rect.width * 0.8) - self.padding * 2,
             padding=5,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             inactive_border_color=pg.Color("red"),
             active_border_color=pg.Color("white"),
             border_width=5,
@@ -343,6 +371,7 @@ class FriendRequests(Alert):
 
         self.find_friend_button = Button(
             self,
+            f"FindFriendButton",
             x=self.username_input.rect.right + 10,
             y=self.username_input.rect.top + self.username_input.input_line.rect.top,
             width=int(self.rect.width * 0.2) - self.padding,
@@ -350,7 +379,7 @@ class FriendRequests(Alert):
             text="Найти",
             padding=5,
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
             active_background=pg.Color("gray"),
             border_color=pg.Color("red"),
             border_width=5,
@@ -359,13 +388,14 @@ class FriendRequests(Alert):
 
         self.friend_requests_label = Label(
             self,
+            "FriendRequestsLabel",
             x=lambda obj: round(
                 self.rect.width / 2 - obj.rect.width / 2 - self.padding * 2
             ),
             y=self.find_friend_button.rect.bottom + 10,
             text="Запросы в друзья",
             color=pg.Color("red"),
-            font=pg.font.Font(None, font_size),
+            font=pg.font.Font(font, font_size),
         )
 
         self.friend_requests = []
@@ -442,9 +472,11 @@ class Social(WidgetsGroup):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
+        font = os.environ.get("FONT")
 
         super(Social, self).__init__(
             parent,
+            "Social",
             x=lambda obj: resolution.width - obj.rect.width,
             y=0,
             width=int(resolution.width * 0.2),
@@ -471,26 +503,31 @@ class Social(WidgetsGroup):
 
         self.social_label = Label(
             self,
+            "SocialLabel",
             x=5,
             y=self.line.rect.bottom + 5,
             text="Сообщество",
             color=pg.Color("red"),
-            font=pg.font.Font(None, int(font_size * 0.8)),
+            font=pg.font.Font(font, int(font_size * 0.8)),
         )
         self.add_friend_button = Button(
             self,
+            "AddFriendButton",
             x=self.social_label.rect.right + 10,
             y=self.social_label.rect.top,
             text=" + ",
             color=pg.Color("red"),
-            font=pg.font.Font(None, int(font_size * 0.8)),
+            font=pg.font.Font(font, int(font_size * 0.8)),
             padding=1,
             active_background=pg.Color("gray"),
             callback=lambda event: self.friend_requests.show(),
         )
 
         self.info_alert = InfoAlert(
-            parent, parent_size=resolution, width=int(resolution.width * 0.5)
+            parent,
+            "SocialInfoAlert",
+            parent_size=resolution,
+            width=int(resolution.width * 0.5),
         )
 
         self.friends: list[FriendWidget] = []
@@ -515,8 +552,6 @@ class Social(WidgetsGroup):
         # Удаляем виджет друга
         widget.delete()
         self.friends.remove(widget)
-        self.remove(widget)
-        self.parent.update()
 
     def on_add_friend(self, user: User) -> None:
         """
@@ -587,27 +622,34 @@ class Social(WidgetsGroup):
         self.friends.clear()
 
         # Добавляем новые виджеты
-        for user in friends:
-            self.friends.append(
-                FriendWidget(
-                    self,
-                    y=lambda obj: (
-                        self.social_label.get_global_rect().bottom
-                        + 10
-                        + (
-                            sum(
-                                widget.rect.height
-                                for widget in self.friends[: self.friends.index(obj)]
-                            )
-                            if obj in self.friends
-                            else 0
-                        )
-                    ),  # Динамическая координата Y
-                    user=user,
-                )
-            )
 
-        self.parent.update()
+        self.friends = [
+            FriendWidget(
+                self,
+                y=lambda obj: (
+                    self.social_label.get_global_rect().bottom
+                    + 10
+                    + (
+                        sum(
+                            w.rect.height
+                            for w in self.friends[: self.friends.index(obj)]
+                        )
+                        if obj in self.friends
+                        else 0
+                    )
+                ),  # Динамическая координата Y
+                user=user,
+            )
+            for user in friends
+        ]
+        self.add(*self.friends)
+
+        for widget in self.friends:
+            widget.drop_menu = FriendDropMenu(
+                widget,
+                f"{widget.user.username}-DropMenu",
+                can_invite=lambda: self.network_client.room is not ...,
+            )
 
     def load_friend_requests(self) -> None:
         """

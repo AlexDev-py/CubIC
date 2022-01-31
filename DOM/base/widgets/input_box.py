@@ -25,6 +25,7 @@ class InputBox(WidgetsGroup):
     def __init__(
         self,
         parent: Group,
+        name: str = None,
         *,
         x: int | CordFunction,
         y: int | CordFunction,
@@ -44,7 +45,7 @@ class InputBox(WidgetsGroup):
         text_filter: BaseTextFilter | None = None,
         is_password: True | False = False,
     ):
-        super(InputBox, self).__init__(parent, x=x, y=y)
+        super(InputBox, self).__init__(parent, name, x=x, y=y)
 
         self.description = Label(
             self,

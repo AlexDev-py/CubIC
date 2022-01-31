@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as ty
 
 import pygame as pg
+from loguru import logger
 
 from .label import Label
 from ..anchor import Anchor
@@ -102,13 +103,17 @@ class InputLine(Label):
 
     @active.setter
     def active(self, value: True | False):
-        self._active = value
-        self.background = (
-            self._active_background if value else self._inactive_background
-        )
-        self.border_color = (
-            self._active_border_color if value else self._inactive_border_color
-        )
+        if self._active != value:
+            self._active = value
+            logger.opt(colors=True).trace(
+                f"{self} <le>active</le>=<y>{self._active}</y>"
+            )
+            self.background = (
+                self._active_background if value else self._inactive_background
+            )
+            self.border_color = (
+                self._active_border_color if value else self._inactive_border_color
+            )
 
 
 class PasswordInputLine(InputLine):
