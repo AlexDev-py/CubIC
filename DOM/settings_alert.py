@@ -108,6 +108,10 @@ class Settings(Alert):
             int(25 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
         )  # Масштабируем размер текста в зависимости от размера окна
 
+        os.environ["buttons_size"] = str(
+            int(5 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
+        )  # Масштабируем размер текста в зависимости от размера окна
+
 
 class ResolutionSetting(WidgetsGroup):
     """

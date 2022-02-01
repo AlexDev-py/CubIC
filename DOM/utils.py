@@ -89,24 +89,27 @@ def check_password(password: str) -> True | False:
 def load_image(
     file_name: str,
     namespace: str = None,
-    size: tuple[int, int] = None,
-    color_key: int = None,
+    size: tuple[int | None, int | None] = None,
+    save_ratio: True | False = False,
 ) -> pg.Surface:
     path = os.path.join(namespace or os.environ["APP_DIR"], file_name)
     if not os.path.isfile(path):
         logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
         return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
 
-    image = pg.image.load(path)
+    image = pg.image.load(path).convert_alpha()
     if size is not None:
-        image = pg.transform.scale(image, size)
-    if color_key is not None:
-        image = image.convert()
-        if color_key == -1:
-            color_key = image.get_at((0, 0))
-        image.set_colorkey(color_key)
-    else:
-        image = image.convert_alpha()
+        if not save_ratio:
+            image = pg.transform.scale(image, size)
+        else:
+            base_size = image.get_size()
+            delta_w = abs(size[0] - base_size[0]) if size[0] is not None else 0
+            delta_h = abs(size[1] - base_size[1]) if size[1] is not None else 0
+            if delta_w > delta_h:
+                size = (size[0], (size[0] * base_size[1]) / base_size[0])
+            else:
+                size = ((size[1] * base_size[0]) / base_size[1], size[1])
+            image = pg.transform.scale(image, size)
 
     return image
 

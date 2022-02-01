@@ -29,6 +29,7 @@ class EscMenu(Alert):
 
         super(EscMenu, self).__init__(
             parent,
+            "Menu",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
             padding=20,
@@ -40,6 +41,7 @@ class EscMenu(Alert):
 
         self.title = Label(
             self,
+            f"",
             x=0,
             y=0,
             width=self.rect.width,

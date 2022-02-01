@@ -122,15 +122,7 @@ class Label(BaseWidget):
             rect.height -= int(self.border_width / 2)
             pg.draw.rect(image, self._border_color, rect, self.border_width)
         if self.sprite:
-            image.blit(
-                source=self.sprite,
-                dest=Anchor.prepare(
-                    obj=self.sprite.get_rect(),
-                    container=image.get_rect(),
-                    anchor=self.anchor,
-                    padding=self.padding + (self.border_width // 2),
-                ),
-            )
+            image.blit(source=self.sprite, dest=self.sprite.get_rect())
         if self.text:
             image.blit(
                 source=self._rendered_text,

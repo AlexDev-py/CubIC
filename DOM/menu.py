@@ -17,7 +17,7 @@ from database.field_types import Resolution
 from lobby import Lobby, LobbyInvite
 from settings_alert import Settings
 from social import Social
-from utils import InfoAlert, LoadingAlert, FinishStatus
+from utils import InfoAlert, LoadingAlert, FinishStatus, load_image
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -27,7 +27,8 @@ class MenuButtons(WidgetsGroup):
     def __init__(self, parent: MenuScreen):
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
-        font = os.environ.get("FONT")
+        buttons_size = int(os.environ["buttons_size"])
+        font_parent = os.environ.get("FONT")
 
         super(MenuButtons, self).__init__(
             parent,
@@ -37,19 +38,22 @@ class MenuButtons(WidgetsGroup):
             padding=20,
         )
 
+        font = pg.font.Font(font_parent, font_size + buttons_size)
+
+        button_width, button_height = font.size("Создать лобби")
         self.create_lobby_button = Button(
             self,
             "CreateLobbyButton",
             x=0,
             y=0,
-            width=int(resolution.width * 0.15),
-            text="Создать лобби",
-            padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color(0, 0, 0, 50),
-            font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
-            border_width=2,
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
+            sprite=load_image(
+                "create_lobby_button.png",
+                namespace=os.environ["BUTTONS_PATH"],
+                size=(button_width, button_height),
+                save_ratio=True,
+            ),
             callback=lambda event: (
                 self.disable(),
                 parent.network_client.create_lobby(
@@ -63,30 +67,33 @@ class MenuButtons(WidgetsGroup):
             "SettingsButton",
             x=0,
             y=lambda btn: self.create_lobby_button.rect.y + 20 + btn.rect.h,
-            width=int(resolution.width * 0.15),
-            text="Настройки",
-            padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color(0, 0, 0, 50),
-            font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
-            border_width=2,
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
+            sprite=load_image(
+                "settings_button.png",
+                namespace=os.environ["BUTTONS_PATH"],
+                size=(None, self.create_lobby_button.height),
+                save_ratio=True,
+            ),
             callback=lambda event: parent.setting.show(),
         )
 
+        button_width, button_height = map(
+            lambda x: x + buttons_size, font.size("Выйти")
+        )
         self.exit_button = Button(
             self,
             "ExitGameButton",
             x=0,
             y=lambda btn: self.settings_button.rect.y + 20 + btn.rect.h,
-            width=int(resolution.width * 0.15),
-            text="Выйти",
-            padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color(0, 0, 0, 50),
-            font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
-            border_width=2,
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
+            sprite=load_image(
+                "exit_button.png",
+                namespace=os.environ["BUTTONS_PATH"],
+                size=(None, self.create_lobby_button.height),
+                save_ratio=True,
+            ),
             callback=lambda event: parent.terminate(),
         )
 
@@ -150,6 +157,10 @@ class MenuScreen(Group):
 
         self.network_client.on_error(callback=self.info_alert.show_message)
 
+        self.back_art = load_image(
+            "backart.png", namespace=os.environ["APP_DIR"], size=resolution
+        )
+
     def on_lobby_invite(self, msg: str, room_id: int) -> None:
         """
         Приглашение в лобби.
@@ -207,7 +218,7 @@ class MenuScreen(Group):
         return self.finish_status
 
     def render(self) -> None:
-        self.screen.fill("white")
+        self.screen.blit(self.back_art, self.back_art.get_rect())
         self.draw(self.screen)
 
         pg.display.flip()
