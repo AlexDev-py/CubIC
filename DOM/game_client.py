@@ -41,7 +41,7 @@ class EscMenu(Alert):
 
         self.title = Label(
             self,
-            f"",
+            f"{self.name}-TitleLabel",
             x=0,
             y=0,
             width=self.rect.width,
@@ -53,6 +53,7 @@ class EscMenu(Alert):
 
         self.continue_button = Button(
             self,
+            f"{self.name}-ContinueButton",
             x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
             y=self.title.rect.bottom + 10,
             width=int(self.rect.width * 0.8),
@@ -69,6 +70,7 @@ class EscMenu(Alert):
 
         self.settings_button = Button(
             self,
+            f"{self.name}-SettingsButton",
             x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
             y=self.continue_button.rect.bottom + 10,
             width=int(self.rect.width * 0.8),
@@ -85,6 +87,7 @@ class EscMenu(Alert):
 
         self.exit_button = Button(
             self,
+            f"{self.name}-ExitButton",
             x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
             y=self.settings_button.rect.bottom + 10,
             width=int(self.rect.width * 0.8),
@@ -117,6 +120,7 @@ class Field(WidgetsGroup):
 
         super(Field, self).__init__(
             parent,
+            f"Field",
             x=lambda obj: resolution.width / 2 - obj.rect.width / 2,
             y=lambda obj: resolution.height / 2 - obj.rect.height / 2,
             width=width,
@@ -127,6 +131,7 @@ class Field(WidgetsGroup):
 
         self._label = Label(
             self,
+            f"{self.name}-Label",
             x=0,
             y=0,
             width=width,
@@ -216,21 +221,27 @@ class StatWidget(WidgetsGroup):
         icon_size = int(int(os.environ["icon_size"]) * 0.5)
         font = os.environ.get("font")
 
-        super(StatWidget, self).__init__(None, x=x, y=y, padding=5)
+        super(StatWidget, self).__init__(
+            None, f"{icon}-StatWidget", x=x, y=y, padding=5
+        )
 
         self.icon = Label(
             self,
+            f"{self.name}-IconLabel",
             x=0,
             y=0,
             width=icon_size,
             height=icon_size,
             sprite=load_image(
-                icon, namespace=os.environ["UI_ICONS_PATH"], size=(icon_size, icon_size)
+                icon,
+                namespace=os.environ["UI_ICONS_PATH"],
+                size=(icon_size, icon_size),
             ),
         )
 
         self.value = Label(
             self,
+            f"{self.name}-ValueLabel",
             x=self.icon.rect.right + 5,
             y=lambda obj: self.icon.height / 2 - obj.rect.height / 2,
             text=str(value),
@@ -243,6 +254,7 @@ class StatsWidget(WidgetsGroup):
     def __init__(self, parent: PlayerWidget):
         super(StatsWidget, self).__init__(
             parent,
+            "StatsWidget",
             x=0,
             y=parent.line.rect.bottom + 5,
             width=int(parent.width / 2),
@@ -291,6 +303,7 @@ class PlayerWidget(WidgetsGroup):
         y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
         super(PlayerWidget, self).__init__(
             None,
+            f"{player.username}-Widget",
             x=0,
             y=y,
             width=parent.rect.width - parent.padding * 2,
@@ -299,6 +312,7 @@ class PlayerWidget(WidgetsGroup):
 
         self.icon = Label(
             self,
+            f"{self.name}-IconLabel",
             x=0,
             y=0,
             width=icon_size,
@@ -312,6 +326,7 @@ class PlayerWidget(WidgetsGroup):
 
         self.username = Label(
             self,
+            f"{self.name}-UsernameLabel",
             x=self.icon.rect.right + 5,
             y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
             text=player.username,
@@ -342,6 +357,7 @@ class PlayersMenu(WidgetsGroup):
 
         super(PlayersMenu, self).__init__(
             parent,
+            "PlayersMenu",
             x=0,
             y=lambda obj: resolution.height / 2 - obj.rect.height / 2,
             width=parent.field.rect.left,
@@ -371,7 +387,7 @@ class GameClientScreen(Group):
         self.running = True
         self.finish_status = FinishStatus.close
 
-        super(GameClientScreen, self).__init__()
+        super(GameClientScreen, self).__init__(name="GameClientScreen")
         self.network_client = (
             self.network_client if hasattr(self, "network_client") else network_client
         )
@@ -387,7 +403,10 @@ class GameClientScreen(Group):
 
         self.esc_menu = EscMenu(self)
         self.info_alert = InfoAlert(
-            self, parent_size=resolution, width=int(resolution.width * 0.7)
+            self,
+            f"{self.name}-InfoAlert",
+            parent_size=resolution,
+            width=int(resolution.width * 0.7),
         )
 
         self.network_client.on_leaving_the_lobby(

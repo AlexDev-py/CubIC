@@ -18,6 +18,7 @@ class InputLine(Label):
     def __init__(
         self,
         parent: Group,
+        name: str = None,
         *,
         x: int | CordFunction,
         y: int | CordFunction,
@@ -40,6 +41,7 @@ class InputLine(Label):
         :param parent: Объект к которому принадлежит виджет.
         :type parent: Объект класса, родителем которого является Group.
          родителем которых является Group.
+        :param name: Название объекта.
         :param x: Координата x.
         :type x: Число или функция вычисляющая координату.
         :param y: Координата y.
@@ -62,6 +64,7 @@ class InputLine(Label):
         """
         super(InputLine, self).__init__(
             parent,
+            name,
             x=x,
             y=y,
             width=width,

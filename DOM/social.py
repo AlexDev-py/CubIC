@@ -321,14 +321,14 @@ class FriendRequests(Alert):
 
         self.info_alert = InfoAlert(
             parent,
-            "FriendRequestsInfoAlert",
+            f"{self.name}-InfoAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
         )
 
         self.exit_button = Button(
             self,
-            "FriendRequestsExitButton",
+            f"{self.name}-ExitButton",
             x=0,
             y=0,
             text=" X ",
@@ -343,7 +343,7 @@ class FriendRequests(Alert):
 
         self.title = Label(
             self,
-            "FriendRequestsTitleLabel",
+            f"{self.name}-TitleLabel",
             x=lambda obj: round(
                 self.rect.width / 2 - obj.rect.width / 2 - self.padding * 2
             ),
@@ -355,7 +355,7 @@ class FriendRequests(Alert):
 
         self.username_input = InputBox(
             self,
-            "FriendRequestInputBox",
+            f"{self.name}-InputBox",
             x=0,
             y=self.title.rect.bottom + 30,
             description="Имя пользователя",
@@ -371,7 +371,7 @@ class FriendRequests(Alert):
 
         self.find_friend_button = Button(
             self,
-            f"FindFriendButton",
+            f"{self.name}-FIndFriendButton",
             x=self.username_input.rect.right + 10,
             y=self.username_input.rect.top + self.username_input.input_line.rect.top,
             width=int(self.rect.width * 0.2) - self.padding,
@@ -386,9 +386,9 @@ class FriendRequests(Alert):
             callback=lambda event: self.send_request(),
         )
 
-        self.friend_requests_label = Label(
+        self.title = Label(
             self,
-            "FriendRequestsLabel",
+            f"{self.name}-TitleLabel",
             x=lambda obj: round(
                 self.rect.width / 2 - obj.rect.width / 2 - self.padding * 2
             ),
@@ -501,9 +501,9 @@ class Social(WidgetsGroup):
             color=pg.Color("red"),
         )
 
-        self.social_label = Label(
+        self.title = Label(
             self,
-            "SocialLabel",
+            f"{self.name}-TitleLabel",
             x=5,
             y=self.line.rect.bottom + 5,
             text="Сообщество",
@@ -512,9 +512,9 @@ class Social(WidgetsGroup):
         )
         self.add_friend_button = Button(
             self,
-            "AddFriendButton",
-            x=self.social_label.rect.right + 10,
-            y=self.social_label.rect.top,
+            f"{self.name}-AddFriendButton",
+            x=self.title.rect.right + 10,
+            y=self.title.rect.top,
             text=" + ",
             color=pg.Color("red"),
             font=pg.font.Font(font, int(font_size * 0.8)),
@@ -525,7 +525,7 @@ class Social(WidgetsGroup):
 
         self.info_alert = InfoAlert(
             parent,
-            "SocialInfoAlert",
+            f"{self.name}-InfoAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
         )
@@ -562,7 +562,7 @@ class Social(WidgetsGroup):
             FriendWidget(
                 self,
                 y=lambda obj: (
-                    self.social_label.get_global_rect().bottom
+                    self.title.get_global_rect().bottom
                     + 10
                     + (
                         sum(
@@ -627,7 +627,7 @@ class Social(WidgetsGroup):
             FriendWidget(
                 self,
                 y=lambda obj: (
-                    self.social_label.get_global_rect().bottom
+                    self.title.get_global_rect().bottom
                     + 10
                     + (
                         sum(
@@ -672,7 +672,7 @@ class Social(WidgetsGroup):
         self.friend_requests.friend_requests.clear()
 
         # Добавляем новые виджеты
-        y = self.friend_requests.friend_requests_label.rect.bottom + 20
+        y = self.friend_requests.title.rect.bottom + 20
         x = 0
         for i, user in enumerate(users):
             self.friend_requests.friend_requests.append(

@@ -184,7 +184,7 @@ class Buttons(WidgetsGroup):
 
         self.leave_lobby_button = Button(
             self,
-            "LeaveLobbyButton",
+            f"{self.name}-LeaveLobbyButton",
             x=0,
             y=0,
             text=" Х ",
@@ -201,7 +201,7 @@ class Buttons(WidgetsGroup):
         ).is_owner
         self.ready_button = Button(
             self,
-            "ReadyButton",
+            f"{self.name}-ReadyButton",
             x=self.leave_lobby_button.rect.w + 10,
             y=0,
             text="Начать игру" if is_owner else "Готов",
@@ -373,7 +373,7 @@ class Lobby(WidgetsGroup):
 
         self.players = WidgetsGroup(
             self,
-            "Lobby-PlayersList",
+            f"{self.name}-PlayersList",
             x=lambda obj: self.rect.width - obj.rect.width,
             y=0,
             padding=20,

@@ -29,6 +29,7 @@ class Settings(Alert):
 
         super(Settings, self).__init__(
             parent,
+            f"SettingsAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.6),
             height=int(resolution.height * 0.8),
@@ -39,6 +40,7 @@ class Settings(Alert):
 
         self.exit_btn = Button(
             self,
+            f"{self.name}-ExitButton",
             x=0,
             y=0,
             text=" X ",
@@ -54,8 +56,6 @@ class Settings(Alert):
         self.resolution_setting = ResolutionSetting(
             self, y=self.exit_btn.rect.bottom + 30
         )
-
-        self.parent.update()
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(Settings, self).handle_event(event)
@@ -123,10 +123,11 @@ class ResolutionSetting(WidgetsGroup):
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
-        super(ResolutionSetting, self).__init__(parent, x=0, y=y)
+        super(ResolutionSetting, self).__init__(parent, "ResolutionSettings", x=0, y=y)
 
-        self.label = Label(
+        self.title = Label(
             self,
+            f"{self.name}-TitleLabel",
             x=0,
             y=0,
             text="Разрешение:",
@@ -136,7 +137,8 @@ class ResolutionSetting(WidgetsGroup):
 
         self.btn_low = Button(
             self,
-            x=self.label.rect.right + 20,
+            f"{self.name}-ButtonLow",
+            x=self.title.rect.right + 20,
             y=0,
             text=" < ",
             padding=2,
@@ -149,6 +151,7 @@ class ResolutionSetting(WidgetsGroup):
 
         self.resolution = Label(
             self,
+            f"{self.name}-ResolutionLabel",
             x=self.btn_low.rect.right + 10,
             y=lambda obj: round(self.btn_low.rect.height / 2 - obj.rect.height / 2),
             text=str(resolution),
@@ -158,6 +161,7 @@ class ResolutionSetting(WidgetsGroup):
 
         self.btn_up = Button(
             self,
+            f"{self.name}-ButtonUp",
             x=self.resolution.rect.right + 10,
             y=0,
             text=" > ",

@@ -43,7 +43,7 @@ class MenuButtons(WidgetsGroup):
         button_width, button_height = font.size("Создать лобби")
         self.create_lobby_button = Button(
             self,
-            "CreateLobbyButton",
+            f"{self.name}-CreateLobbyButton",
             x=0,
             y=0,
             width=lambda obj: obj.sprite.get_width(),
@@ -64,7 +64,7 @@ class MenuButtons(WidgetsGroup):
 
         self.settings_button = Button(
             self,
-            "SettingsButton",
+            f"{self.name}-SettingsButton",
             x=0,
             y=lambda btn: self.create_lobby_button.rect.y + 20 + btn.rect.h,
             width=lambda obj: obj.sprite.get_width(),
@@ -78,12 +78,9 @@ class MenuButtons(WidgetsGroup):
             callback=lambda event: parent.setting.show(),
         )
 
-        button_width, button_height = map(
-            lambda x: x + buttons_size, font.size("Выйти")
-        )
         self.exit_button = Button(
             self,
-            "ExitGameButton",
+            f"{self.name}-ExitGameButton",
             x=0,
             y=lambda btn: self.settings_button.rect.y + 20 + btn.rect.h,
             width=lambda obj: obj.sprite.get_width(),
@@ -124,13 +121,13 @@ class MenuScreen(Group):
 
         self.info_alert = InfoAlert(
             self,
-            "MenuInfoAlert",
+            f"{self.name}-InfoAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
         )
         self.loading_alert = LoadingAlert(
             self,
-            "MenuLoadingAlert",
+            f"{self.name}-LoadingAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.5),
         )

@@ -37,7 +37,7 @@ class StartAppScreen(Group):
 
         self.label = Label(
             self,
-            "DOM label",
+            f"{self.name}-DOMLabel",
             x=lambda lb: self.SIZE[0] / 2 - lb.rect.w / 2,
             y=lambda lb: self.SIZE[1] / 2 - lb.rect.h,
             text="DOM",
@@ -50,7 +50,7 @@ class StartAppScreen(Group):
 
         self.status = Text(
             self,
-            "Status text",
+            f"{self.name}-StatusText",
             x=lambda lb: self.SIZE[0] / 2 - lb.rect.w / 2,
             y=self.label.rect.bottom + 20,
             width=self.SIZE[0] - 40,

@@ -27,11 +27,18 @@ class Login(WidgetsGroup):
         font = os.environ.get("font")
 
         super(Login, self).__init__(
-            parent, x=0, y=0, width=parent.SIZE[0], height=parent.SIZE[1], padding=20
+            parent,
+            f"{parent.name}-Login",
+            x=0,
+            y=0,
+            width=parent.SIZE[0],
+            height=parent.SIZE[1],
+            padding=20,
         )
 
-        self.label = Label(
+        self.title = Label(
             self,
+            f"{self.name}-TitleLabel",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2 - 20),
             y=int(parent.SIZE[1] * 0.2),
             text="Авторизация",
@@ -41,8 +48,9 @@ class Login(WidgetsGroup):
 
         self.login = InputBox(
             self,
+            f"{self.name}-LoginInputBox",
             x=0,
-            y=self.label.rect.bottom + 40,
+            y=self.title.rect.bottom + 40,
             description="Имя пользователя",
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
@@ -55,6 +63,7 @@ class Login(WidgetsGroup):
 
         self.password = InputBox(
             self,
+            f"{self.name}-PasswordInputBox",
             x=0,
             y=self.login.rect.bottom + 30,
             description="Пароль",
@@ -68,8 +77,9 @@ class Login(WidgetsGroup):
             is_password=True,
         )
 
-        self.auth_button = Button(
+        self.login_button = Button(
             self,
+            f"{self.name}-LoginButton",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2) - 20,
             y=self.password.rect.bottom + 30,
             text="Войти",
@@ -82,10 +92,11 @@ class Login(WidgetsGroup):
             callback=lambda event: self.auth(parent),
         )
 
-        self.auth_button = Button(
+        self.signup_button = Button(
             self,
+            f"{self.name}-SignupButton",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2) - 20,
-            y=self.auth_button.rect.bottom + 5,
+            y=self.login_button.rect.bottom + 5,
             text="зарегистрироваться",
             padding=5,
             color=pg.Color("blue"),
@@ -122,11 +133,18 @@ class Signup(WidgetsGroup):
         font = os.environ.get("font")
 
         super(Signup, self).__init__(
-            parent, x=0, y=0, width=parent.SIZE[0], height=parent.SIZE[1], padding=20
+            parent,
+            f"{parent.name}-Signup",
+            x=0,
+            y=0,
+            width=parent.SIZE[0],
+            height=parent.SIZE[1],
+            padding=20,
         )
 
-        self.label = Label(
+        self.title = Label(
             self,
+            f"{self.name}-TitleLabel",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2 - 20),
             y=int(parent.SIZE[1] * 0.1),
             text="Регистрация",
@@ -136,8 +154,9 @@ class Signup(WidgetsGroup):
 
         self.login = InputBox(
             self,
+            f"{self.name}-LoginInputBox",
             x=0,
-            y=self.label.rect.bottom + 40,
+            y=self.title.rect.bottom + 40,
             description="Имя пользователя",
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
@@ -151,6 +170,7 @@ class Signup(WidgetsGroup):
 
         self.password = InputBox(
             self,
+            f"{self.name}-PasswordInputBox",
             x=0,
             y=self.login.rect.bottom + 30,
             description="Пароль",
@@ -166,6 +186,7 @@ class Signup(WidgetsGroup):
 
         self.password2 = InputBox(
             self,
+            f"{self.name}-Password2InputBox",
             x=0,
             y=self.password.rect.bottom + 30,
             description="Повторите пароль",
@@ -179,8 +200,9 @@ class Signup(WidgetsGroup):
             is_password=True,
         )
 
-        self.auth_button = Button(
+        self.signup_button = Button(
             self,
+            f"{self.name}-SignupButton",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2) - 20,
             y=self.password2.rect.bottom + 30,
             text="Создать аккаунт",
@@ -193,10 +215,11 @@ class Signup(WidgetsGroup):
             callback=lambda event: self.auth(parent),
         )
 
-        self.auth_button = Button(
+        self.login_button = Button(
             self,
+            f"{self.name}-LoginButton",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2) - 20,
-            y=self.auth_button.rect.bottom + 5,
+            y=self.signup_button.rect.bottom + 5,
             text="авторизоваться",
             padding=5,
             color=pg.Color("blue"),
@@ -237,7 +260,7 @@ class AuthScreen(Group):
     SIZE = (450, 550)
 
     def __init__(self, network_client: NetworkClient, error: str = ""):
-        super(AuthScreen, self).__init__()
+        super(AuthScreen, self).__init__(name="AuthScreen")
 
         self.network_client = network_client
 
@@ -248,7 +271,12 @@ class AuthScreen(Group):
         self.signup_group = Signup(self)
         self.show_login_group()
 
-        self.error_alert = InfoAlert(self, self.SIZE, int(self.SIZE[0] * 0.9))
+        self.error_alert = InfoAlert(
+            self,
+            f"{self.name}-InfoAlert",
+            parent_size=self.SIZE,
+            width=int(self.SIZE[0] * 0.9),
+        )
         if error:
             self.error_alert.show_message(error)
 

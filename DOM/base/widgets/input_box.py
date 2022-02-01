@@ -49,6 +49,7 @@ class InputBox(WidgetsGroup):
 
         self.description = Label(
             self,
+            f"{self.name}-DescriptionLabel",
             x=0,
             y=0,
             text=description,
@@ -58,6 +59,7 @@ class InputBox(WidgetsGroup):
 
         self.input_line = (InputLine if not is_password else PasswordInputLine)(
             self,
+            f"{self.name}-InputLine",
             x=0,
             y=self.description.rect.bottom + 5,
             width=width,

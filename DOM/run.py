@@ -38,6 +38,8 @@ os.environ["USER_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "user_icons"
 os.environ["UI_ICONS_PATH"] = os.path.join(os.environ["APP_DIR"], "ui_icons")
 # Путь к директории с иконками предметов
 os.environ["ITEMS_PATH"] = os.path.join(os.environ["APP_DIR"], "items")
+# Путь к директории с рамками предметов
+os.environ["ITEM_BORDERS_PATH"] = os.path.join(os.environ["APP_DIR"], "item_borders")
 # Путь к директории с кнопками
 os.environ["BUTTONS_PATH"] = os.path.join(os.environ["APP_DIR"], "buttons")
 # Путь к директории с локациями
