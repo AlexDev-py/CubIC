@@ -210,11 +210,11 @@ class Field(WidgetsGroup):
 
 
 class StatWidget(WidgetsGroup):
-    def __init__(self, parent: StatsWidget, x: int, y: int, icon: str, value: int):
+    def __init__(self, x: int, y: int, icon: str, value: int):
         icon_size = int(int(os.environ["icon_size"]) * 0.5)
         font = os.environ.get("font")
 
-        super(StatWidget, self).__init__(parent, x=x, y=y, padding=5)
+        super(StatWidget, self).__init__(None, x=x, y=y, padding=5)
 
         self.icon = Label(
             self,
@@ -261,6 +261,8 @@ class StatsWidget(WidgetsGroup):
             "life_abduction.png", parent.player.character.life_abduction
         )
 
+        self.add(*self.stats)
+
     def add_stat(self, icon: str, value: int) -> StatWidget:
         if not len(self.stats):
             x = y = 0
@@ -271,7 +273,7 @@ class StatsWidget(WidgetsGroup):
                 x = 0
                 y += self.stats[-1].rect.height
 
-        widget = StatWidget(self, x, y, icon, value)
+        widget = StatWidget(x, y, icon, value)
         self.stats.append(widget)
         return widget
 
@@ -286,7 +288,7 @@ class PlayerWidget(WidgetsGroup):
 
         y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
         super(PlayerWidget, self).__init__(
-            parent,
+            None,
             x=0,
             y=y,
             width=parent.rect.width - parent.padding * 2,
@@ -357,6 +359,7 @@ class PlayersMenu(WidgetsGroup):
 
         for i, player in enumerate(self.network_client.room.players):
             self.players.append(PlayerWidget(self, player, index=i))
+        self.add(*self.players)
 
 
 class GameClientScreen(Group):
