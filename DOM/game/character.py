@@ -22,7 +22,7 @@ class Character:
     armor: int = 0
     move_speed: int = 0
     life_abduction: int = 0
-    items: list[Item] = field(default_factory=list)
+    items: list[Item | None] = field(default_factory=list)
 
 
 with open(

@@ -192,7 +192,7 @@ class Label(BaseWidget):
         return self._sprite
 
     @sprite.setter
-    def sprite(self, value: pg.Surface):
+    def sprite(self, value: pg.Surface | None):
         self._sprite = value
 
     @property

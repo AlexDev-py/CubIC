@@ -19,6 +19,7 @@ from utils import load_image, FinishStatus, InfoAlert
 if ty.TYPE_CHECKING:
     from network import NetworkClient
     from game.player import Player
+    from game.item import Item
 
 
 class EscMenu(Alert):
@@ -217,13 +218,11 @@ class Field(WidgetsGroup):
 
 
 class StatWidget(WidgetsGroup):
-    def __init__(self, x: int, y: int, icon: str, value: int):
+    def __init__(self, name: str, x: int, y: int, icon: str, value: int):
         icon_size = int(int(os.environ["icon_size"]) * 0.5)
         font = os.environ.get("font")
 
-        super(StatWidget, self).__init__(
-            None, f"{icon}-StatWidget", x=x, y=y, padding=5
-        )
+        super(StatWidget, self).__init__(None, name, x=x, y=y, padding=5)
 
         self.icon = Label(
             self,
@@ -254,8 +253,8 @@ class StatsWidget(WidgetsGroup):
     def __init__(self, parent: PlayerWidget):
         super(StatsWidget, self).__init__(
             parent,
-            "StatsWidget",
-            x=0,
+            f"{parent.name}-StatsWidget",
+            x=int(parent.width / 2),
             y=parent.line.rect.bottom + 5,
             width=int(parent.width / 2),
         )
@@ -287,8 +286,103 @@ class StatsWidget(WidgetsGroup):
                 x = 0
                 y += self.stats[-1].rect.height
 
-        widget = StatWidget(x, y, icon, value)
+        widget = StatWidget(f"{self.name}-{icon}-StatWidget", x, y, icon, value)
         self.stats.append(widget)
+        return widget
+
+
+class ItemWidget(WidgetsGroup):
+    def __init__(self, name: str, x: int, y: int, item: Item | None):
+        icon_size = int(int(os.environ["icon_size"]) * 0.9)
+
+        self.item: Item | None = ...
+
+        super(ItemWidget, self).__init__(None, name, x=x, y=y)
+
+        self.item_icon = Label(
+            self,
+            f"{name}-ItemIconLabel",
+            x=0,
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            padding=2,
+            text="",
+        )
+
+        self.border_icon = Label(
+            self,
+            f"{name}-ItemIconLabel",
+            x=0,
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            text="",
+        )
+
+        self.init(item)
+
+    def init(self, item: Item | None):
+        icon_size = int(int(os.environ["icon_size"]) * 0.9)
+
+        self.item = item
+
+        if item:
+            self.item_icon.sprite = load_image(
+                item.icon,
+                namespace=os.environ["ITEMS_PATH"],
+                size=(icon_size - self.item_icon.padding, None),
+                save_ratio=True,
+            )
+            self.border_icon.sprite = load_image(
+                f"lvl{item.lvl}.png",
+                namespace=os.environ["ITEM_BORDERS_PATH"],
+                size=(icon_size, None),
+                save_ratio=True,
+            )
+        else:
+            self.item_icon.sprite = load_image(
+                "damage.png",
+                namespace=os.environ["UI_ICONS_PATH"],
+                size=(round(icon_size * 0.7 - self.item_icon.padding), None),
+                save_ratio=True,
+            )
+            self.border_icon.sprite = load_image(
+                f"lvl1.png",
+                namespace=os.environ["ITEM_BORDERS_PATH"],
+                size=(icon_size, None),
+                save_ratio=True,
+            )
+
+
+class ItemsWidget(WidgetsGroup):
+    def __init__(self, parent: PlayerWidget):
+        super(ItemsWidget, self).__init__(
+            parent,
+            "ItemsWidget",
+            x=0,
+            y=parent.line.rect.bottom + 5,
+            width=int(parent.width / 2),
+        )
+
+        self.items = []
+        for item in parent.player.character.items:
+            self.add_item(item)
+
+        self.add(*self.items)
+
+    def add_item(self, item: Item | None) -> ItemWidget:
+        if not len(self.items):
+            x = y = 0
+        else:
+            y = self.items[-1].rect.y
+            x = self.items[-1].rect.right + 2
+            if x + self.items[-1].rect.width > self.rect.width:
+                x = 0
+                y += self.items[-1].rect.height + 2
+
+        widget = ItemWidget(f"{self.name}-{len(self.items) + 1}-ItemWidget", x, y, item)
+        self.items.append(widget)
         return widget
 
 
@@ -307,7 +401,6 @@ class PlayerWidget(WidgetsGroup):
             x=0,
             y=y,
             width=parent.rect.width - parent.padding * 2,
-            background=pg.Color("gray"),
         )
 
         self.icon = Label(
@@ -343,6 +436,7 @@ class PlayerWidget(WidgetsGroup):
             color=pg.Color("red"),
         )
 
+        self.items = ItemsWidget(self)
         self.stats = StatsWidget(self)
 
     def delete(self) -> None:
@@ -359,7 +453,7 @@ class PlayersMenu(WidgetsGroup):
             parent,
             "PlayersMenu",
             x=0,
-            y=lambda obj: resolution.height / 2 - obj.rect.height / 2,
+            y=0,
             width=parent.field.rect.left,
             height=resolution.height,
             padding=5,
@@ -378,6 +472,92 @@ class PlayersMenu(WidgetsGroup):
         for i, player in enumerate(self.network_client.room.players):
             self.players.append(PlayerWidget(self, player, index=i))
         self.add(*self.players)
+
+
+class ItemStand(WidgetsGroup):
+    def __init__(self, name: str, x: int, y: int, width: int, item: Item):
+        icon_size = int(int(os.environ["icon_size"]))
+        self.item = item
+
+        super(ItemStand, self).__init__(None, "name", x=x, y=y, width=width)
+
+        self.stand = Label(
+            self,
+            f"{name}-StandLabel",
+            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            y=round(icon_size / 2),
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
+            sprite=load_image(
+                "item_stand.png",
+                namespace=os.environ["UI_ICONS_PATH"],
+                size=(icon_size * 2, None),
+                save_ratio=True,
+            ),
+        )
+
+        self.item = Label(
+            self,
+            f"{name}-ItemLabel",
+            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            sprite=load_image(
+                item.icon,
+                namespace=os.environ["ITEMS_PATH"],
+                size=(icon_size, icon_size),
+            ),
+        )
+
+
+class ShopMenu(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        self.network_client = parent.network_client
+
+        super(ShopMenu, self).__init__(
+            parent,
+            "ShopMenu",
+            x=parent.field.rect.right,
+            y=0,
+            width=resolution.width - parent.field.rect.right,
+            height=resolution.height,
+            padding=5,
+        )
+
+        self.items = []
+        for item in self.network_client.room.shop:
+            self.add_item(item)
+
+        self.add(*self.items)
+
+    def add_item(self, item: Item | None) -> ItemStand:
+        icon_size = int(int(os.environ["icon_size"]))
+
+        in_line_count = len(self.network_client.room.players)
+        if len(self.network_client.room.players) == 4:
+            in_line_count = 3
+        width = int((self.rect.width - self.padding * 2) / in_line_count)
+        while width < icon_size * 2:
+            in_line_count -= 1
+            width = int((self.rect.width - self.padding * 2) / in_line_count)
+
+        if not len(self.items):
+            x = y = 0
+        else:
+            y = self.items[-1].rect.y
+            x = self.items[-1].rect.right
+            if x + self.items[-1].rect.width > self.rect.width:
+                x = 0
+                y += self.items[-1].rect.height + icon_size / 3
+
+        widget = ItemStand(
+            f"{self.name}-{len(self.items) + 1}-ItemWidget", x, y, width, item
+        )
+        self.items.append(widget)
+        return widget
 
 
 class GameClientScreen(Group):
@@ -400,6 +580,7 @@ class GameClientScreen(Group):
 
         self.field = Field(self)
         self.players_menu = PlayersMenu(self)
+        self.shop = ShopMenu(self)
 
         self.esc_menu = EscMenu(self)
         self.info_alert = InfoAlert(

@@ -416,9 +416,9 @@ class NetworkClient:
             lambda response: (
                 logger.opt(colors=True).info(
                     f"Игрок <y>{response['player']['username']}</y> купил предмет "
-                    f"<y>{response['player']['character']['items'][-1]['name']}</y>"
+                    f"<y>{self.room.shop[response['item_index']].name}</y>"
                 ),
-                self.room.shop.remove(self.room.shop[response["item_index"]]),
+                self.room.shop.__setitem__(response["item_index"], None),
                 self.room.update_player(Player(**response["player"])),
                 callback(),
             ),
