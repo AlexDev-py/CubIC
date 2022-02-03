@@ -107,8 +107,10 @@ class Text(Label):
             (
                 max(line.get_width() for line in lines),
                 sum(line.get_height() for line in lines),
-            )
-        )
+            ),
+            pg.SRCALPHA,
+            32,
+        ).convert_alpha()
         y = 0
         for line in lines:
             x = Anchor.prepare(
