@@ -690,6 +690,30 @@ class ItemDescription(WidgetsGroup):
             **dict(soft_split=True) if parent.width else {},
         )
 
+        self.price_label = Label(
+            self,
+            f"{self.name}-PriceLabel",
+            x=0,
+            y=self.icon.rect.bottom + 5,
+            text=f"Цена: {item.price}",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+        )
+        self.price_icon_label = Label(
+            self,
+            f"{self.name}-CoinsIconLabel",
+            x=self.price_label.rect.right,
+            y=self.price_label.rect.top,
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
+            sprite=load_image(
+                "coins.png",
+                namespace=os.environ["UI_ICONS_PATH"],
+                size=(None, self.price_label.rect.height),
+                save_ratio=True,
+            ),
+        )
+
         self.stats: list[StatWidget] = []
 
         for stat_name, stat_value in self.item.desc.items():
@@ -702,7 +726,7 @@ class ItemDescription(WidgetsGroup):
     def add_stat(self, icon: str, value: str) -> StatWidget:
         if not len(self.stats):
             x = 0
-            y = self.icon.rect.bottom + 5
+            y = self.price_label.rect.bottom + 5
         else:
             y = self.stats[-1].rect.y
             x = self.stats[-1].rect.right
