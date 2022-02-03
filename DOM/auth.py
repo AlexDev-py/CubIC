@@ -12,7 +12,13 @@ import typing as ty
 import pygame as pg
 
 from base import Group, Button, Label, WidgetsGroup, InputBox
-from utils import FinishStatus, check_password, NickTextFilter, InfoAlert
+from utils import (
+    FinishStatus,
+    check_password,
+    NickTextFilter,
+    PasswordTextFilter,
+    InfoAlert,
+)
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -43,7 +49,7 @@ class Login(WidgetsGroup):
             y=int(parent.SIZE[1] * 0.2),
             text="Авторизация",
             color=pg.Color("red"),
-            font=pg.font.Font(font, 40),
+            font=pg.font.Font(font, 30),
         )
 
         self.login = InputBox(
@@ -55,10 +61,11 @@ class Login(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(font, 30),
+            font=pg.font.Font(font, 25),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
+            text_filter=NickTextFilter,
         )
 
         self.password = InputBox(
@@ -70,11 +77,12 @@ class Login(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(font, 30),
+            font=pg.font.Font(font, 20),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
             is_password=True,
+            text_filter=PasswordTextFilter,
         )
 
         self.login_button = Button(
@@ -86,7 +94,7 @@ class Login(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(font, 25),
+            font=pg.font.Font(font, 17),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.auth(parent),
@@ -100,6 +108,7 @@ class Login(WidgetsGroup):
             text="зарегистрироваться",
             padding=5,
             color=pg.Color("blue"),
+            font=pg.font.Font(font, 13),
             callback=lambda event: parent.show_signup_group(),
         )
 
@@ -149,7 +158,7 @@ class Signup(WidgetsGroup):
             y=int(parent.SIZE[1] * 0.1),
             text="Регистрация",
             color=pg.Color("red"),
-            font=pg.font.Font(font, 40),
+            font=pg.font.Font(font, 30),
         )
 
         self.login = InputBox(
@@ -161,7 +170,7 @@ class Signup(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(font, 30),
+            font=pg.font.Font(font, 20),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
@@ -177,11 +186,12 @@ class Signup(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(font, 30),
+            font=pg.font.Font(font, 20),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
             is_password=True,
+            text_filter=PasswordTextFilter,
         )
 
         self.password2 = InputBox(
@@ -193,11 +203,12 @@ class Signup(WidgetsGroup):
             width=self.rect.width * 0.9,
             color=pg.Color("red"),
             padding=5,
-            font=pg.font.Font(font, 30),
+            font=pg.font.Font(font, 20),
             inactive_border_color=pg.Color("gray"),
             active_border_color=pg.Color("black"),
             border_width=5,
             is_password=True,
+            text_filter=PasswordTextFilter,
         )
 
         self.signup_button = Button(
@@ -209,7 +220,7 @@ class Signup(WidgetsGroup):
             padding=5,
             color=pg.Color("red"),
             active_background=pg.Color("#171717"),
-            font=pg.font.Font(font, 25),
+            font=pg.font.Font(font, 17),
             border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.auth(parent),
@@ -223,6 +234,7 @@ class Signup(WidgetsGroup):
             text="авторизоваться",
             padding=5,
             color=pg.Color("blue"),
+            font=pg.font.Font(font, 13),
             callback=lambda event: parent.show_login_group(),
         )
 

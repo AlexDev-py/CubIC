@@ -28,6 +28,10 @@ NickTextFilter = LengthTextFilter(15) & AlphabetTextFilter(
     ["-", "_"], nums=True, eng=True, rus=True, ignore_case=True
 )
 
+PasswordTextFilter = LengthTextFilter(40) & AlphabetTextFilter(
+    list("-_@$!%*#?&"), nums=True, eng=True, rus=False, ignore_case=True
+)
+
 
 class FinishStatus:
     """
@@ -63,7 +67,8 @@ def check_password(password: str) -> True | False:
     # строчные буквы и есть ли символы
     if re.search(
         re.compile(
-            r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{12,40}$"
+            r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&\-_])"
+            r"[A-Za-z\d@$!#%*?&\-_]{12,40}$"
         ),
         password,
     ):
@@ -71,7 +76,9 @@ def check_password(password: str) -> True | False:
 
     # Если пароль длинный с символами, строчными буквами, но без заглавных.
     elif re.search(
-        re.compile(r"^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[a-z\d@$!#%*?&]{12,40}$"),
+        re.compile(
+            r"^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&\-_])[a-z\d@$!%*#?&\-_]{12,40}$"
+        ),
         password,
     ):
         return True
@@ -79,7 +86,7 @@ def check_password(password: str) -> True | False:
     # Дополнительное условие, что пароль по длине больше 9 и в нём есть символы,
     # заглавные буквы, но без строчных.
     elif re.search(
-        re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Z\d@$!#%*?&]{9,40}$"),
+        re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&\-_])[A-Z\d@$!%*#?&\-_]{9,40}$"),
         password,
     ):
         return True
@@ -152,7 +159,7 @@ class LoadingAlert(Alert):
         :param parent_size: Размер родительского виджета.
         :param width: Ширина виджета.
         """
-        font_size = int(os.environ["font_size"])
+        font_size = int(os.environ.get("font_size", 20))
         font = os.environ.get("font")
 
         super(LoadingAlert, self).__init__(
@@ -208,7 +215,7 @@ class InfoAlert(LoadingAlert):
         :param parent_size: Размеры родительского виджета.
         :param width: Ширина информационного виджета.
         """
-        font_size = int(os.environ["font_size"])
+        font_size = int(os.environ.get("font_size", 17))
         font = os.environ.get("font")
 
         super(InfoAlert, self).__init__(
