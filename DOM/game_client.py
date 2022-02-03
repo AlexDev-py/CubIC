@@ -26,6 +26,11 @@ if ty.TYPE_CHECKING:
 
 class EscMenu(Alert):
     def __init__(self, parent: GameClientScreen):
+        """
+        Меню игрового клиента.
+        Открывается по нажатию клавиши Escape.
+        :param parent: ...
+        """
         resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
@@ -109,11 +114,16 @@ class EscMenu(Alert):
             ),
         )
 
-        self.settings = Settings(parent)
+        self.settings = Settings(parent)  # Подключаем виджет настроек
 
 
 class ItemDropMenu(DropMenu):
     def __init__(self, parent: PlayerWidget, can_remove: True | False):
+        """
+        Выпадающее меню для предметов.
+        :param parent: ...
+        :param can_remove: Может ли пользователь продать предметы.
+        """
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
@@ -156,15 +166,25 @@ class ItemDropMenu(DropMenu):
             )
 
     def init(self, item: Item, item_index: int) -> None:
+        """
+        Инициализация предмета.
+        :param item: Предмет.
+        :param item_index: Индекс предмета в инвентаре.
+        """
         self.item = item
         self.item_index = item_index
-        if self.item_desc is not ...:
+        if self.item_desc is not ...:  # Удаляем старое описание
             self.remove(self.item_desc)
         self.item_desc = ItemDescription(
             self, f"{self.name}-ItemDesc", x=0, y=0, item=item, item_index=item_index
         )
 
     def handle_event(self, event: pg.event.Event) -> None:
+        """
+        Модифицируем базовый метод.
+        Отключаем открытие меню по нажатию на виджет.
+        :param event: ...
+        """
         if not self.hidden:
             WidgetsGroup.handle_event(self, event)
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -180,9 +200,14 @@ class ItemDropMenu(DropMenu):
 
 class Field(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
+        """
+        Виджет поля.
+        :param parent: ...
+        """
         resolution = Resolution.converter(os.environ["resolution"])
 
-        height = width = min(resolution)
+        height = width = min(resolution)  # Размеры поля
+
         self.network_client = parent.network_client
 
         self._field_image = pg.Surface((width, height))
@@ -211,13 +236,16 @@ class Field(WidgetsGroup):
         self.update_field()
 
     def _generate_location_map(self) -> None:
-        self.floors: list[tuple[pg.Surface, pg.Rect]] = []
-        self.walls: list[tuple[pg.Surface, pg.Rect]] = []
+        """
+        Создает картинку поля.
+        """
+        self.floors: list[tuple[pg.Surface, pg.Rect]] = []  # Элементы пола
+        self.walls: list[tuple[pg.Surface, pg.Rect]] = []  # Элементы стен
 
         block_width, block_height = (
             self.width / len(self.network_client.room.field[0]),
             self.height / len(self.network_client.room.field),
-        )
+        )  # Размеры одного блока
 
         for i, (board_line, location_line) in enumerate(
             zip(self.network_client.room.field, self.network_client.room.location)
@@ -228,7 +256,7 @@ class Field(WidgetsGroup):
             ):
                 x = block_width * j
                 rect = pg.Rect(x, y, block_width, block_height * 1.3)
-                if board_block is True:
+                if board_block is True:  # Если блок - элемента пола
                     self.floors.append(
                         (
                             load_image(
@@ -246,7 +274,7 @@ class Field(WidgetsGroup):
                             rect,
                         )
                     )
-                else:
+                else:  # Если блок - элемент стены
                     self.walls.append(
                         (
                             load_image(
@@ -266,6 +294,9 @@ class Field(WidgetsGroup):
                     )
 
     def update_field(self) -> None:
+        """
+        Отображение игры.
+        """
         image = pg.Surface(self._field_image.get_size())
         for floor_image, floor_rect in self.floors:
             image.blit(floor_image, floor_rect)
@@ -287,6 +318,15 @@ class Field(WidgetsGroup):
 
 class StatWidget(WidgetsGroup):
     def __init__(self, name: str, x: int, y: int, icon: str, value: str):
+        """
+        Виджет характеристики.
+        Иконка + значение.
+        :param name: Название элемента.
+        :param x: Координата x.
+        :param y: Координата y.
+        :param icon: Название файла с иконкой.
+        :param value: Значение характеристики.
+        """
         icon_size = int(int(os.environ["icon_size"]) * 0.5)
         font = os.environ.get("font")
 
@@ -319,6 +359,10 @@ class StatWidget(WidgetsGroup):
 
 class StatsWidget(WidgetsGroup):
     def __init__(self, parent: PlayerWidget):
+        """
+        Виджет характеристик персонажа.
+        :param parent: ...
+        """
         super(StatsWidget, self).__init__(
             parent,
             f"{parent.name}-StatsWidget",
@@ -327,7 +371,7 @@ class StatsWidget(WidgetsGroup):
             width=int(parent.width / 2),
         )
 
-        self.stats: list[StatWidget] = []
+        self.stats: list[StatWidget] = []  # Характеристики персонажа
 
         self.hp = self.add_stat("hp.png", parent.player.character.hp)
         self.damage = self.add_stat("damage.png", parent.player.character.damage)
@@ -346,20 +390,34 @@ class StatsWidget(WidgetsGroup):
         self.add(*self.stats)
 
     def add_stat(self, icon: str, value: int) -> StatWidget:
-        if not len(self.stats):
+        """
+        Добавление характеристики.
+        Автоматически смещает характеристику на новую линию,
+        если нехватает места для ее отображения.
+        :param icon: Название файла с иконкой.
+        :param value: Значение характеристики.
+        :return: Виджет характеристики.
+        """
+        if not len(self.stats):  # Если это первая характеристика
             x = y = 0
         else:
             y = self.stats[-1].rect.y
             x = self.stats[-1].rect.right
+            # Если не хватает места
             if x + self.stats[-1].rect.width > self.rect.width:
                 x = 0
                 y += self.stats[-1].rect.height
 
         widget = StatWidget(f"{self.name}-{icon}-StatWidget", x, y, icon, str(value))
-        self.stats.append(widget)
+        self.stats.append(widget)  # Добавляем в список
         return widget
 
     def update_stats(self, player: Player) -> None:
+        """
+        Обновляет характеристики.
+        :param player: Экземпляр игрока.
+        """
+        # Перебор всех характеристик
         for stat in {
             "hp",
             "damage",
@@ -370,6 +428,7 @@ class StatsWidget(WidgetsGroup):
             "coins",
         }:
             widget: StatWidget = self.__getattribute__(stat)
+            # Если значение изменилось
             if widget.value.text != (
                 value := str(player.character.__getattribute__(stat))
             ):
@@ -378,6 +437,13 @@ class StatsWidget(WidgetsGroup):
 
 class ItemWidget(WidgetsGroup):
     def __init__(self, name: str, x: int, y: int, item: Item | None):
+        """
+        Виджет предмета в инвентаре.
+        :param name: Название виджета.
+        :param x: Координата x.
+        :param y: Координата y.
+        :param item: Предмет.
+        """
         icon_size = int(int(os.environ["icon_size"]) * 0.9)
 
         self.item: Item | None = ...
@@ -406,41 +472,37 @@ class ItemWidget(WidgetsGroup):
 
         self.init(item)
 
-    def init(self, item: Item | None):
+    def init(self, item: Item | None) -> None:
+        """
+        Инициализирует предмет.
+        :param item: Предмет.
+        """
         icon_size = int(int(os.environ["icon_size"]) * 0.9)
 
         self.item = item
 
-        if item:
-            self.item_icon.sprite = load_image(
-                item.icon,
-                namespace=os.environ["ITEMS_PATH"],
-                size=(icon_size - 4, None),
-                save_ratio=True,
-            )
-            self.border_icon.sprite = load_image(
-                f"lvl{item.lvl}.png",
-                namespace=os.environ["ITEM_BORDERS_PATH"],
-                size=(icon_size, None),
-                save_ratio=True,
-            )
-        else:
-            self.item_icon.sprite = load_image(
-                "default.png",
-                namespace=os.environ["ITEMS_PATH"],
-                size=(icon_size - 4, None),
-                save_ratio=True,
-            )
-            self.border_icon.sprite = load_image(
-                f"lvl1.png",
-                namespace=os.environ["ITEM_BORDERS_PATH"],
-                size=(icon_size, None),
-                save_ratio=True,
-            )
+        self.item_icon.sprite = load_image(
+            # Если слот пустой, ставим соответствующую иконку
+            item.icon if item else "default.png",
+            namespace=os.environ["ITEMS_PATH"],
+            size=(icon_size - 4, None),
+            save_ratio=True,
+        )
+        self.border_icon.sprite = load_image(
+            # Если слот пустой, ставим рамку первого уровня
+            f"lvl{item.lvl if item else 1}.png",
+            namespace=os.environ["ITEM_BORDERS_PATH"],
+            size=(icon_size, None),
+            save_ratio=True,
+        )
 
 
 class ItemsWidget(WidgetsGroup):
     def __init__(self, parent: PlayerWidget):
+        """
+        Виджет инвентаря персонажа.
+        :param parent: ...
+        """
         super(ItemsWidget, self).__init__(
             parent,
             "ItemsWidget",
@@ -449,14 +511,21 @@ class ItemsWidget(WidgetsGroup):
             width=int(parent.width / 2),
         )
 
-        self.items: list[ItemWidget] = []
+        self.items: list[ItemWidget] = []  # Слоты
         for item in parent.player.character.items:
             self.add_item(item)
 
         self.add(*self.items)
 
     def add_item(self, item: Item | None) -> ItemWidget:
-        if not len(self.items):
+        """
+        Добавляет предмет в инвентарь.
+        Автоматически смещает слот на новую линию,
+        если нехватает места для его отображения.
+        :param item: Предмет.
+        :return: Виджет предмета.
+        """
+        if not len(self.items):  # Если это первый слот
             x = y = 0
         else:
             y = self.items[-1].rect.y
@@ -470,9 +539,14 @@ class ItemsWidget(WidgetsGroup):
         return widget
 
     def update_items(self, player: Player) -> None:
+        """
+        Обновляет предметы.
+        :param player: Экземпляр игрока.
+        """
         for item_index, (item, item_widget) in enumerate(
             zip(player.character.items, self.items)
         ):
+            # Если предмет изменился
             if (item.name if item else None) != (
                 item_widget.item.name if item_widget.item else None
             ):
@@ -481,6 +555,13 @@ class ItemsWidget(WidgetsGroup):
 
 class PlayerWidget(WidgetsGroup):
     def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
+        """
+        Виджет игрока.
+        Объединяет информацию об игроке, его предметы и характеристики.
+        :param parent: ...
+        :param player: Экземпляр игрока.
+        :param index: Индекс(для определения координаты Y).
+        """
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
         font = os.environ.get("font")
@@ -488,6 +569,7 @@ class PlayerWidget(WidgetsGroup):
         self.player = player
         self.network_client = parent.network_client
 
+        # Определяем положение виджета
         y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
         super(PlayerWidget, self).__init__(
             None,
@@ -528,13 +610,17 @@ class PlayerWidget(WidgetsGroup):
             width=self.rect.width,
             height=2,
             color=pg.Color("red"),
-        )
+        )  # Линия - разделитель
 
         self.items = ItemsWidget(self)
         self.stats = StatsWidget(self)
         self.drop_menu: ItemDropMenu = ...
 
     def update_data(self, player: Player) -> None:
+        """
+        Обновляет данные об игроке.
+        :param player: Новый экземпляр игрока.
+        """
         self.player = player
         self.items.update_items(self.player)
         self.stats.update_stats(self.player)
@@ -544,22 +630,29 @@ class PlayerWidget(WidgetsGroup):
         if self.enabled:
             if event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == pg.BUTTON_RIGHT:
+                    # Открытие выпадающего меню предмета
                     if (
                         self.items.get_global_rect().collidepoint(event.pos)
                         and self.drop_menu is not ...
                     ):
                         for i, item_widget in enumerate(self.items.items):
                             if item_widget.item:
+                                # Открытие при нажатии на предмет
                                 if item_widget.get_global_rect().collidepoint(
                                     event.pos
                                 ):
                                     self.drop_menu.init(item_widget.item, i)
                                     self.drop_menu.open(event.pos)
                                     self.drop_menu.update()
+                                    break
 
 
 class PlayersMenu(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
+        """
+        Виджет игроков.
+        :param parent: ...
+        """
         resolution = Resolution.converter(os.environ["resolution"])
 
         self.network_client = parent.network_client
@@ -574,32 +667,53 @@ class PlayersMenu(WidgetsGroup):
             padding=5,
         )
 
-        self.players: list[PlayerWidget] = []
+        self.players: list[PlayerWidget] = []  # Список игроков
 
         self.update_players()
 
     def update_players(self) -> None:
+        """
+        Обновляет список игроков.
+        """
+        # Удаление старых виджетов
         self.parent.remove(*(widget.drop_menu for widget in self.players))
         self.remove(*self.players)
+
         self.players.clear()
 
+        # Создание новых виджетов
         for i, player in enumerate(self.network_client.room.players):
             self.players.append(PlayerWidget(self, player, index=i))
         self.add(*self.players)
 
+        # Создание выпадающих меню
         for widget in self.players:
             widget.drop_menu = ItemDropMenu(
                 widget, can_remove=widget.player.uid == self.network_client.user.uid
             )
 
     def update_player(self, player: Player) -> None:
+        """
+        Обновление одного из игроков.
+        :param player: Экземпляр игрока.
+        """
+        # Поиск по uid
         players = [p for p in self.players if p.player.uid == player.uid]
         players[0].update_data(player)
 
 
 class ItemStand(WidgetsGroup):
     def __init__(self, name: str, x: int, y: int, width: int, item: Item):
+        """
+        Стэнд с предметом.
+        :param name: Название виджета.
+        :param x: Координата x.
+        :param y: Координата y.
+        :param width: Ширина виджета.
+        :param item: Предмет.
+        """
         icon_size = int(os.environ["icon_size"])
+
         self.item = item
 
         super(ItemStand, self).__init__(None, "name", x=x, y=y, width=width)
@@ -626,17 +740,22 @@ class ItemStand(WidgetsGroup):
             y=0,
             width=icon_size,
             height=icon_size,
-            sprite=load_image(
-                item.icon,
-                namespace=os.environ["ITEMS_PATH"],
-                size=(icon_size, icon_size),
-            )
-            if item
-            else None,
+            sprite=(
+                load_image(
+                    item.icon,
+                    namespace=os.environ["ITEMS_PATH"],
+                    size=(icon_size, icon_size),
+                )
+                if item
+                else None
+            ),
             text="",
         )
 
     def sales(self) -> None:
+        """
+        Помечает предмет как проданный.
+        """
         self.item_icon.sprite = None
         self.item = None
 
@@ -651,6 +770,16 @@ class ItemDescription(WidgetsGroup):
         item: Item,
         item_index: int,
     ):
+        """
+        Описание предмета.
+        Иконка, название, цена, характеристики.
+        :param parent: ...
+        :param name: Название виджета.
+        :param x: Координата x.
+        :param y: Координата y.
+        :param item: Предмет.
+        :param item_index: Индекс предмета в инвентаре или магазине.
+        """
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
         font = os.environ.get("font")
@@ -674,6 +803,7 @@ class ItemDescription(WidgetsGroup):
             ),
         )
 
+        # Если parent имеет ограниченную ширину, то используем Text
         self.name = (Text if parent.width else Label)(
             self,
             f"{self.name}-NameLabel",
@@ -714,7 +844,7 @@ class ItemDescription(WidgetsGroup):
             ),
         )
 
-        self.stats: list[StatWidget] = []
+        self.stats: list[StatWidget] = []  # Характеристики предмета
 
         for stat_name, stat_value in self.item.desc.items():
             if stat_name == "max_hp":
@@ -724,7 +854,15 @@ class ItemDescription(WidgetsGroup):
         self.add(*self.stats)
 
     def add_stat(self, icon: str, value: str) -> StatWidget:
-        if not len(self.stats):
+        """
+        Добавляет характеристику к предмету.
+        Автоматически смещает характеристику на новую линию,
+        если нехватает места для ее отображения.
+        :param icon: Название файла с иконкой характеристики.
+        :param value: Значение характеристики.
+        :return: Виджет характеристики.
+        """
+        if not len(self.stats):  # Если это первая характеристика
             x = 0
             y = self.price_label.rect.bottom + 5
         else:
@@ -741,6 +879,10 @@ class ItemDescription(WidgetsGroup):
 
 class ShopMenu(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
+        """
+        Магазин.
+        :param parent: ...
+        """
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
         resolution = Resolution.converter(os.environ["resolution"])
@@ -757,12 +899,13 @@ class ShopMenu(WidgetsGroup):
             padding=5,
         )
 
-        self.items: list[ItemStand] = []
+        self.items: list[ItemStand] = []  # Предметы
         for item in self.network_client.room.shop:
             self.add_item(item)
 
         self.add(*self.items)
 
+        # Меню покупки предмета
         self.item_preview = WidgetsGroup(
             self,
             f"{self.name}-ItemPreview",
@@ -774,7 +917,7 @@ class ShopMenu(WidgetsGroup):
         )
         self.item_preview.disable()
 
-        self.item_desc: ItemDescription = ...
+        self.item_desc: ItemDescription = ...  # Описание выбранного предмета
 
         self.buy_button = Button(
             self.item_preview,
@@ -795,8 +938,16 @@ class ShopMenu(WidgetsGroup):
         )
 
     def add_item(self, item: Item | None) -> ItemStand:
+        """
+        Добавляет предмет в магазин.
+        Автоматически смещает предмет на новую линию,
+        если нехватает места для его отображения.
+        :param item:
+        :return:
+        """
         icon_size = int(int(os.environ["icon_size"]))
 
+        # Кол-во предметов в строке
         in_line_count = len(self.network_client.room.players)
         if len(self.network_client.room.players) == 4:
             in_line_count = 3
@@ -805,7 +956,7 @@ class ShopMenu(WidgetsGroup):
             in_line_count -= 1
             width = int((self.rect.width - self.padding * 2) / in_line_count)
 
-        if not len(self.items):
+        if not len(self.items):  # Если это первый предмет
             x = 0
             y = 20
         else:
@@ -828,10 +979,13 @@ class ShopMenu(WidgetsGroup):
                 if event.button == pg.BUTTON_LEFT:
                     if self.get_global_rect().collidepoint(event.pos):
                         for i, item in enumerate(self.items):
+                            # Выбор предмета
                             if item.get_global_rect().collidepoint(event.pos):
-                                if item.item:
+                                if item.item:  # Если предмет еще не продан
+                                    # Удаляем старое описание предмета
                                     if self.item_desc is not ...:
                                         self.item_preview.remove(self.item_desc)
+                                    # Создаем новое описание предмета
                                     self.item_desc = ItemDescription(
                                         self.item_preview,
                                         f"{self.item_preview.name}-{i}-ItemDescription",
@@ -908,6 +1062,7 @@ class GameClientScreen(Group):
                     self.terminate()
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
+                        # Обработка открытия / закрытия меню
                         if self.esc_menu.parent.hidden:
                             self.esc_menu.show()
                         else:
@@ -930,6 +1085,7 @@ class GameClientScreen(Group):
         super(GameClientScreen, self).handle_event(event)
         if self.enabled:
             if event.type == ButtonClickEvent.type:
+                # Кнопка покупки предмета
                 if event.obj == self.shop.buy_button:
                     if self.shop.item_desc is not ...:
                         self.network_client.buy_item(

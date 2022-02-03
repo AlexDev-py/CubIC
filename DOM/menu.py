@@ -26,9 +26,7 @@ if ty.TYPE_CHECKING:
 class MenuButtons(WidgetsGroup):
     def __init__(self, parent: MenuScreen):
         resolution = Resolution.converter(os.environ["resolution"])
-        font_size = int(os.environ["font_size"])
         buttons_size = int(os.environ["buttons_size"])
-        font_parent = os.environ.get("FONT")
 
         super(MenuButtons, self).__init__(
             parent,
@@ -38,9 +36,6 @@ class MenuButtons(WidgetsGroup):
             padding=20,
         )
 
-        font = pg.font.Font(font_parent, font_size + buttons_size)
-
-        button_width, button_height = font.size("Создать лобби")
         self.create_lobby_button = Button(
             self,
             f"{self.name}-CreateLobbyButton",
@@ -51,7 +46,7 @@ class MenuButtons(WidgetsGroup):
             sprite=load_image(
                 "create_lobby_button.png",
                 namespace=os.environ["BUTTONS_PATH"],
-                size=(button_width, button_height),
+                size=(None, buttons_size),
                 save_ratio=True,
             ),
             callback=lambda event: (
@@ -72,7 +67,7 @@ class MenuButtons(WidgetsGroup):
             sprite=load_image(
                 "settings_button.png",
                 namespace=os.environ["BUTTONS_PATH"],
-                size=(None, self.create_lobby_button.height),
+                size=(None, buttons_size),
                 save_ratio=True,
             ),
             callback=lambda event: parent.setting.show(),
@@ -88,7 +83,7 @@ class MenuButtons(WidgetsGroup):
             sprite=load_image(
                 "exit_button.png",
                 namespace=os.environ["BUTTONS_PATH"],
-                size=(None, self.create_lobby_button.height),
+                size=(None, buttons_size),
                 save_ratio=True,
             ),
             callback=lambda event: parent.terminate(),
@@ -103,6 +98,7 @@ class MenuScreen(Group):
         super(MenuScreen, self).__init__(name="MenuScreen")
 
         self.finish_status: str = FinishStatus.close
+        self.running = True
 
         self.network_client = (
             self.network_client if hasattr(self, "network_client") else network_client
@@ -132,7 +128,7 @@ class MenuScreen(Group):
             width=int(resolution.width * 0.5),
         )
 
-        self.running = True
+        # Приглашение в лобби
         self.lobby_invite: LobbyInvite = ...
 
         # Подключаем обработчики событий
@@ -156,7 +152,7 @@ class MenuScreen(Group):
 
         self.back_art = load_image(
             "backart.png", namespace=os.environ["APP_DIR"], size=resolution
-        )
+        )  # Фоновая картинка
 
     def on_lobby_invite(self, msg: str, room_id: int) -> None:
         """

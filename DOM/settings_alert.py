@@ -29,7 +29,7 @@ class Settings(Alert):
 
         super(Settings, self).__init__(
             parent,
-            f"SettingsAlert",
+            "SettingsAlert",
             parent_size=resolution,
             width=int(resolution.width * 0.6),
             height=int(resolution.height * 0.8),
@@ -98,6 +98,9 @@ class Settings(Alert):
 
     @classmethod
     def init_interface_size(cls) -> None:
+        """
+        Обновление размеров интерфейса в зависимости от разрешения окна.
+        """
         resolution = Resolution.converter(os.environ["resolution"])
 
         os.environ["font_size"] = str(
@@ -106,11 +109,11 @@ class Settings(Alert):
 
         os.environ["icon_size"] = str(
             int(25 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
-        )  # Масштабируем размер текста в зависимости от размера окна
+        )  # Масштабируем размер иконок в зависимости от размера окна
 
         os.environ["buttons_size"] = str(
-            int(5 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
-        )  # Масштабируем размер текста в зависимости от размера окна
+            int(30 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
+        )  # Масштабируем размер кнопок в зависимости от размера окна
 
 
 class ResolutionSetting(WidgetsGroup):
@@ -180,3 +183,5 @@ class ResolutionSetting(WidgetsGroup):
         elif ALLOWED_RESOLUTION.index(resolution) == len(ALLOWED_RESOLUTION) - 1:
             self.btn_up.disable()
             self.btn_up.hide()
+
+        self.update()

@@ -49,7 +49,6 @@ class FriendDropMenu(DropMenu):
         :param parent: ...
         :param name: Название объекта.
         :param can_invite: Может ли пользователь пригласить этого друга в группу.
-        :type can_invite: Функция, которая возвращает True или False.
         """
         font_size = int(os.environ["font_size"])  # Размер текста
         font = os.environ.get("font")
@@ -115,16 +114,12 @@ class UserWidget(WidgetsGroup):
         """
         Виджет пользователя.
         :param parent: Объект к которому принадлежит виджет.
-        :type parent: Объект класса, родителем которого является Group.
         :param x: Координата x.
-        :type x: Число или функция вычисляющая координату.
         :param y: Координата y.
-        :type y: Число или функция вычисляющая координату.
         :param user: Объект пользователя.
         :param icon_size: Размер иконки пользователя.
         :param font_size: Размер текста.
         :param width: Ширина виджета.
-        :type width: Число или функция вычисляющая ширину.
         """
         font_size = font_size or int(os.environ["font_size"])
         icon_size = icon_size or int(os.environ["icon_size"])
@@ -199,9 +194,7 @@ class FriendWidget(UserWidget):
         """
         Виджет друга.
         :param parent: Объект к которому принадлежит виджет.
-        :type parent: Объект класса, родителем которого является Group.
         :param y: Координата y.
-        :type y: Число или функция вычисляющая координату.
         :param user: Объект пользователя.
         """
         font_size = int(int(os.environ["font_size"]) * 0.7)

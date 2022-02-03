@@ -21,6 +21,9 @@ if ty.TYPE_CHECKING:
     from base.types import CordFunction
     from base.group import Group
 
+# Фильтр содержания ника
+# Максимальная длинна: 15
+# Возможные символы: -; _; <цифры>; <английский алфавит>; <русский алфавит>
 NickTextFilter = LengthTextFilter(15) & AlphabetTextFilter(
     ["-", "_"], nums=True, eng=True, rus=True, ignore_case=True
 )
@@ -92,9 +95,22 @@ def load_image(
     size: tuple[int | None, int | None] = None,
     save_ratio: True | False = False,
 ) -> pg.Surface:
+    """
+    Загрузка изображения.
+    :param file_name: Название файла.
+    :param namespace: Окружение(директория с файлом).
+    :param size: Размер изображения.
+        size - Кортеж из двух элементов типа int | None.
+        None значение поддерживается только при save_ratio=True
+        None значением может быть только один из элементов кортежа.
+    :param save_ratio: True - Сохраняет пропорции при масштабировании.
+    :return: Готовое изображение.
+    """
+    # Путь к файлу(если namespace не указан, файл ищется в директории приложения)
     path = os.path.join(namespace or os.environ["APP_DIR"], file_name)
     if not os.path.isfile(path):
         logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
+        # Возвращаем пустое изображение
         return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
 
     image = pg.image.load(path).convert_alpha()
@@ -102,12 +118,17 @@ def load_image(
         if not save_ratio:
             image = pg.transform.scale(image, size)
         else:
-            base_size = image.get_size()
+            # Масштабирование с сохранением пропорций
+            base_size = image.get_size()  # Изначальный размер изображения
+            # Изменение ширины
             delta_w = abs(size[0] - base_size[0]) if size[0] is not None else 0
+            # Изменение высоты
             delta_h = abs(size[1] - base_size[1]) if size[1] is not None else 0
             if delta_w > delta_h:
+                # Высчитываем подходящее значение высоты
                 size = (size[0], (size[0] * base_size[1]) / base_size[0])
             else:
+                # Высчитываем подходящее значение ширины
                 size = ((size[1] * base_size[0]) / base_size[1], size[1])
             image = pg.transform.scale(image, size)
 
@@ -123,6 +144,14 @@ class LoadingAlert(Alert):
         parent_size: tuple[int, int],
         width: int,
     ):
+        """
+        Виджет загрузки.
+        Не имеет кнопки закрытия. Закрывается только программно.
+        :param parent: Объект к которому принадлежит виджет.
+        :param name: Название объекта.
+        :param parent_size: Размер родительского виджета.
+        :param width: Ширина виджета.
+        """
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
@@ -175,7 +204,6 @@ class InfoAlert(LoadingAlert):
         """
         Виджет, отображающий информационное сообщение.
         :param parent: Объект к которому принадлежит виджет.
-        :type parent: Объект класса, родителем которого является Group.
         :param name: Название объекта.
         :param parent_size: Размеры родительского виджета.
         :param width: Ширина информационного виджета.
@@ -218,13 +246,11 @@ class DropMenu(WidgetsGroup):
         """
         Выпадающий виджет.
         Активируется по нажатию правой кнопкой мыши по определенному виджету.
+        Закрывается при нажатии в другое место экрана.
         :param parent: Объект к которому принадлежит виджет.
-        :type parent: Объект класса, родителем которого является WidgetsGroup.
         :param name: Название объекта.
         :param width: Ширина виджета.
-        :type width: Число или функция вычисляющая ширину.
         :param height: Высота виджета.
-        :type height: Число или функция вычисляющая высоту.
         :param padding: Отступы от границ виджета.
         :param background: Цвет фона.
         :param border_color: Цвет обводки виджета.
@@ -289,12 +315,6 @@ class DropMenu(WidgetsGroup):
 
         self.show()  # Показываем
         self.enable()  # Активируем
-
-    def hide(self) -> None:
-        """
-        Скрывает и деактивирует меню.
-        """
-        super(DropMenu, self).hide()
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
