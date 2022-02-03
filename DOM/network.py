@@ -410,7 +410,7 @@ class NetworkClient:
             "buy item", dict(room_id=self.room.room_id, item_index=item_index)
         )
 
-    def on_buying_an_item(self, callback: ty.Callable[[], ...]) -> None:
+    def on_buying_an_item(self, callback: ty.Callable[[int, Player], ...]) -> None:
         self.sio.on(
             "buying an item",
             lambda response: (
@@ -420,7 +420,10 @@ class NetworkClient:
                 ),
                 self.room.shop.__setitem__(response["item_index"], None),
                 self.room.update_player(Player(**response["player"])),
-                callback(),
+                callback(
+                    response["item_index"],
+                    self.room.get_by_uid(response["player"]["uid"]),
+                ),
             ),
         )
 
@@ -429,7 +432,7 @@ class NetworkClient:
             "remove item", dict(room_id=self.room.room_id, item_index=item_index)
         )
 
-    def on_removing_an_item(self, callback: ty.Callable[[], ...]) -> None:
+    def on_removing_an_item(self, callback: ty.Callable[[Player], ...]) -> None:
         self.sio.on(
             "removing an item",
             lambda response: (
@@ -438,7 +441,7 @@ class NetworkClient:
                     f"<y>{response['item']['name']}</y>"
                 ),
                 self.room.update_player(Player(**response["player"])),
-                callback(),
+                callback(self.room.get_by_uid(response["player"]["uid"])),
             ),
         )
 

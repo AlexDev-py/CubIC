@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import json
 import os
-import typing as ty
 from dataclasses import dataclass, field
 
-if ty.TYPE_CHECKING:
-    from .item import Item
+from .item import Item
 
 
 @dataclass
@@ -23,6 +21,11 @@ class Character:
     move_speed: int = 0
     life_abduction: int = 0
     items: list[Item | None] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.items = [
+            Item(**item) if isinstance(item, dict) else None for item in self.items
+        ]
 
 
 with open(

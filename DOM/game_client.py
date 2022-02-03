@@ -12,9 +12,10 @@ import typing as ty
 import pygame as pg
 
 from base import WidgetsGroup, Group, Label, Alert, Button, Anchor, Line, Text
+from base.events import ButtonClickEvent
 from database.field_types import Resolution
 from settings_alert import Settings
-from utils import load_image, FinishStatus, InfoAlert
+from utils import load_image, FinishStatus, InfoAlert, DropMenu
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -109,6 +110,72 @@ class EscMenu(Alert):
         )
 
         self.settings = Settings(parent)
+
+
+class ItemDropMenu(DropMenu):
+    def __init__(self, parent: PlayerWidget, can_remove: True | False):
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(ItemDropMenu, self).__init__(
+            parent,
+            f"{parent.name}-DropMenu",
+            padding=10,
+            background=pg.Color("gray"),
+            border_color=pg.Color("red"),
+            border_width=2,
+        )
+
+        self.item: Item = ...
+        self.item_index: int = ...
+
+        self.item_desc: ItemDescription = ...
+        if can_remove:
+            self.remove_button = Button(
+                self,
+                name=f"{self.name}-RemoveButton",
+                x=0,
+                y=lambda obj: (self.item_desc.rect.bottom + 10)
+                if self.item_desc is not ...
+                else 0,
+                width=lambda obj: self.rect.width
+                - self.padding * 2
+                - self.border_width * 2,
+                text="Продать",
+                padding=5,
+                color=pg.Color("red"),
+                active_background=pg.Color("gray"),
+                font=pg.font.Font(font, font_size),
+                anchor=Anchor.center,
+                border_color=pg.Color("red"),
+                border_width=2,
+                callback=lambda event: (
+                    self.hide(),
+                    parent.network_client.remove_item(self.item_index),
+                ),
+            )
+
+    def init(self, item: Item, item_index: int) -> None:
+        self.item = item
+        self.item_index = item_index
+        if self.item_desc is not ...:
+            self.remove(self.item_desc)
+        self.item_desc = ItemDescription(
+            self, f"{self.name}-ItemDesc", x=0, y=0, item=item, item_index=item_index
+        )
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        if not self.hidden:
+            WidgetsGroup.handle_event(self, event)
+        if event.type == pg.MOUSEBUTTONDOWN:
+            # Скрываем виджет
+            if event.button == pg.BUTTON_RIGHT:
+                if self._widget.get_global_rect().collidepoint(event.pos):
+                    return
+            if hasattr(event, "pos"):
+                if not self.hidden:
+                    if not self.rect.collidepoint(event.pos):
+                        self.hide()
 
 
 class Field(WidgetsGroup):
@@ -274,6 +341,7 @@ class StatsWidget(WidgetsGroup):
         self.life_abduction = self.add_stat(
             "life_abduction.png", parent.player.character.life_abduction
         )
+        self.coins = self.add_stat("coins.png", parent.player.character.coins)
 
         self.add(*self.stats)
 
@@ -291,6 +359,22 @@ class StatsWidget(WidgetsGroup):
         self.stats.append(widget)
         return widget
 
+    def update_stats(self, player: Player) -> None:
+        for stat in {
+            "hp",
+            "damage",
+            "attack_range",
+            "armor",
+            "move_speed",
+            "life_abduction",
+            "coins",
+        }:
+            widget: StatWidget = self.__getattribute__(stat)
+            if widget.value.text != (
+                value := str(player.character.__getattribute__(stat))
+            ):
+                widget.value.text = value
+
 
 class ItemWidget(WidgetsGroup):
     def __init__(self, name: str, x: int, y: int, item: Item | None):
@@ -303,11 +387,10 @@ class ItemWidget(WidgetsGroup):
         self.item_icon = Label(
             self,
             f"{name}-ItemIconLabel",
-            x=0,
-            y=0,
-            width=icon_size,
-            height=icon_size,
-            padding=2,
+            x=2,
+            y=2,
+            width=icon_size - 4,
+            height=icon_size - 4,
             text="",
         )
 
@@ -332,7 +415,7 @@ class ItemWidget(WidgetsGroup):
             self.item_icon.sprite = load_image(
                 item.icon,
                 namespace=os.environ["ITEMS_PATH"],
-                size=(icon_size - self.item_icon.padding, None),
+                size=(icon_size - 4, None),
                 save_ratio=True,
             )
             self.border_icon.sprite = load_image(
@@ -343,9 +426,9 @@ class ItemWidget(WidgetsGroup):
             )
         else:
             self.item_icon.sprite = load_image(
-                "damage.png",
-                namespace=os.environ["UI_ICONS_PATH"],
-                size=(round(icon_size * 0.7 - self.item_icon.padding), None),
+                "default.png",
+                namespace=os.environ["ITEMS_PATH"],
+                size=(icon_size - 4, None),
                 save_ratio=True,
             )
             self.border_icon.sprite = load_image(
@@ -366,7 +449,7 @@ class ItemsWidget(WidgetsGroup):
             width=int(parent.width / 2),
         )
 
-        self.items = []
+        self.items: list[ItemWidget] = []
         for item in parent.player.character.items:
             self.add_item(item)
 
@@ -386,6 +469,15 @@ class ItemsWidget(WidgetsGroup):
         self.items.append(widget)
         return widget
 
+    def update_items(self, player: Player) -> None:
+        for item_index, (item, item_widget) in enumerate(
+            zip(player.character.items, self.items)
+        ):
+            if (item.name if item else None) != (
+                item_widget.item.name if item_widget.item else None
+            ):
+                item_widget.init(item)
+
 
 class PlayerWidget(WidgetsGroup):
     def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
@@ -394,6 +486,7 @@ class PlayerWidget(WidgetsGroup):
         font = os.environ.get("font")
 
         self.player = player
+        self.network_client = parent.network_client
 
         y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
         super(PlayerWidget, self).__init__(
@@ -439,9 +532,30 @@ class PlayerWidget(WidgetsGroup):
 
         self.items = ItemsWidget(self)
         self.stats = StatsWidget(self)
+        self.drop_menu: ItemDropMenu = ...
 
-    def delete(self) -> None:
-        self.parent.remove(self)
+    def update_data(self, player: Player) -> None:
+        self.player = player
+        self.items.update_items(self.player)
+        self.stats.update_stats(self.player)
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        super(PlayerWidget, self).handle_event(event)
+        if self.enabled:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == pg.BUTTON_RIGHT:
+                    if (
+                        self.items.get_global_rect().collidepoint(event.pos)
+                        and self.drop_menu is not ...
+                    ):
+                        for i, item_widget in enumerate(self.items.items):
+                            if item_widget.item:
+                                if item_widget.get_global_rect().collidepoint(
+                                    event.pos
+                                ):
+                                    self.drop_menu.init(item_widget.item, i)
+                                    self.drop_menu.open(event.pos)
+                                    self.drop_menu.update()
 
 
 class PlayersMenu(WidgetsGroup):
@@ -465,14 +579,22 @@ class PlayersMenu(WidgetsGroup):
         self.update_players()
 
     def update_players(self) -> None:
-        for player in self.players:
-            player.delete()
-
+        self.parent.remove(*(widget.drop_menu for widget in self.players))
+        self.remove(*self.players)
         self.players.clear()
 
         for i, player in enumerate(self.network_client.room.players):
             self.players.append(PlayerWidget(self, player, index=i))
         self.add(*self.players)
+
+        for widget in self.players:
+            widget.drop_menu = ItemDropMenu(
+                widget, can_remove=widget.player.uid == self.network_client.user.uid
+            )
+
+    def update_player(self, player: Player) -> None:
+        players = [p for p in self.players if p.player.uid == player.uid]
+        players[0].update_data(player)
 
 
 class ItemStand(WidgetsGroup):
@@ -486,12 +608,12 @@ class ItemStand(WidgetsGroup):
             self,
             f"{name}-StandLabel",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
-            y=round(icon_size / 2),
+            y=round(icon_size / 3),
             width=lambda obj: obj.sprite.get_width(),
             height=lambda obj: obj.sprite.get_height(),
             sprite=load_image(
-                "item_stand.png",
-                namespace=os.environ["UI_ICONS_PATH"],
+                f"stand{item.lvl if item else 1}.png",
+                namespace=os.environ["ITEM_STANDS_PATH"],
                 size=(icon_size * 2, None),
                 save_ratio=True,
             ),
@@ -508,8 +630,15 @@ class ItemStand(WidgetsGroup):
                 item.icon,
                 namespace=os.environ["ITEMS_PATH"],
                 size=(icon_size, icon_size),
-            ),
+            )
+            if item
+            else None,
+            text="",
         )
+
+    def sales(self) -> None:
+        self.item_icon.sprite = None
+        self.item = None
 
 
 class ItemDescription(WidgetsGroup):
@@ -545,21 +674,27 @@ class ItemDescription(WidgetsGroup):
             ),
         )
 
-        self.name = Text(
+        self.name = (Text if parent.width else Label)(
             self,
             f"{self.name}-NameLabel",
             x=self.icon.rect.right + 5,
             y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
-            width=parent.rect.width - parent.padding * 2 - icon_size - 5,
+            width=(
+                (parent.rect.width - parent.padding * 2 - icon_size - 5)
+                if parent.width
+                else None
+            ),
             text=item.name,
             color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            soft_split=True,
+            **dict(soft_split=True) if parent.width else {},
         )
 
         self.stats: list[StatWidget] = []
 
         for stat_name, stat_value in self.item.desc.items():
+            if stat_name == "max_hp":
+                stat_name = "hp"
             self.add_stat(f"{stat_name}.png", stat_value)
 
         self.add(*self.stats)
@@ -633,7 +768,6 @@ class ShopMenu(WidgetsGroup):
             anchor=Anchor.center,
             border_color=pg.Color("red"),
             border_width=2,
-            callback=lambda event: ...,
         )
 
     def add_item(self, item: Item | None) -> ItemStand:
@@ -648,7 +782,8 @@ class ShopMenu(WidgetsGroup):
             width = int((self.rect.width - self.padding * 2) / in_line_count)
 
         if not len(self.items):
-            x = y = 0
+            x = 0
+            y = 20
         else:
             y = self.items[-1].rect.y
             x = self.items[-1].rect.right
@@ -726,6 +861,21 @@ class GameClientScreen(Group):
                 self.info_alert.show_message(msg),
             )
         )
+        self.network_client.on_buying_an_item(
+            callback=lambda item_index, player: (
+                self.shop.items[item_index].sales(),
+                self.players_menu.update_player(player),
+                (
+                    (self.shop.item_preview.hide(), self.shop.item_preview.disable())
+                    if self.shop.item_desc is not ...
+                    and self.shop.item_desc.item_index == item_index
+                    else ...
+                ),
+            )
+        )
+        self.network_client.on_removing_an_item(
+            callback=lambda player: self.players_menu.update_player(player)
+        )
 
     def exec(self) -> str:
         while self.running:
@@ -751,3 +901,14 @@ class GameClientScreen(Group):
 
     def terminate(self) -> None:
         self.running = False
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        super(GameClientScreen, self).handle_event(event)
+        if self.enabled:
+            if event.type == ButtonClickEvent.type:
+                if event.obj == self.shop.buy_button:
+                    if self.shop.item_desc is not ...:
+                        self.network_client.buy_item(
+                            self.shop.item_desc.item_index,
+                            fail_callback=lambda msg: self.info_alert.show_message(msg),
+                        )

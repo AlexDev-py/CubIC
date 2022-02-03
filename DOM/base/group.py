@@ -53,14 +53,15 @@ class Group(Object, ABC):
                 parent.update()
             parent = parent.parent
 
-    def remove(self, obj: Object) -> None:
+    def remove(self, *objects: Object) -> None:
         """
-        Удаляет объект из группы.
-        :param obj: Объект.
+        Удаляет объекты из группы.
+        :param objects: Объекты.
         """
-        if obj in self._objects:
-            logger.opt(colors=True).trace(f"removing {obj} from {self}")
-            self._objects.remove(obj)
+        for obj in objects:
+            if obj in self._objects:
+                logger.opt(colors=True).trace(f"removing {obj} from {self}")
+                self._objects.remove(obj)
         self.update()
 
     def update(self, *args, **kwargs) -> None:
