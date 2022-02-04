@@ -6,14 +6,20 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 import typing as ty
+import urllib.error
+import urllib.request
+import zipfile
+from io import BytesIO
 
 import pygame as pg
 import socketio.exceptions  # noqa
 from loguru import logger
 
+import hashing
 from base import Thread, Label, Group, Text, Anchor
 from utils import FinishStatus
 
@@ -101,6 +107,8 @@ class StartAppScreen(Group):
                     self.status.text = "Сервер недоступен\nПопробуйте позже"
                 time.sleep(5)
 
+        self.check_files()
+
         self.finish_status = FinishStatus.auth_failed
         if os.path.isfile(os.environ["AUTH_PATH"]):
             with open(os.environ["AUTH_PATH"], encoding="utf-8") as file:
@@ -126,6 +134,42 @@ class StartAppScreen(Group):
         else:
             logger.info("Файл .auth не найден")
             self.terminate()
+
+    def check_files(self) -> None:
+        self.status.text = "Проверка целостности файлов"
+
+        data_file_path = os.path.join(os.environ["APP_DIR"], "files.json")
+        if not os.path.isfile(
+            data_file_path
+        ) or self.network_client.get_data_hash() != hashing.get_hash(data_file_path):
+            print(self.network_client.get_data_hash(), hashing.get_hash(data_file_path))
+            self.fix_media_files()
+            return
+
+        with open(data_file_path, encoding="utf-8") as file:
+            data: dict[str, str] = json.load(file)
+
+        for file_path, file_hash in data.items():
+            file_path = os.path.join(os.environ["APP_DIR"], file_path)
+            if not os.path.isfile(file_path) or file_hash != hashing.get_hash(
+                file_path
+            ):
+                print(file_path, file_hash, hashing.get_hash(file_path))
+                self.fix_media_files()
+                break
+
+    def fix_media_files(self):
+        self.status.text = "Восстановление файлов"
+
+        data_links = self.network_client.get_data_links()
+        response = urllib.request.urlopen(data_links["resources"])  # Скачивание
+        while response.getcode() != 200:
+            logger.error(f"download error. code: {response.getcode()}")
+            response = urllib.request.urlopen(data_links["resources"])
+        logger.trace("Unzipping the resources")
+        archive = BytesIO(response.read())
+        with zipfile.ZipFile(archive) as zip_file:  # Разархивация
+            zip_file.extractall(os.environ["APP_DIR"])
 
     def render(self) -> None:
         """

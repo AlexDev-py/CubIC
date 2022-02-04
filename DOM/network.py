@@ -472,6 +472,12 @@ class NetworkClient:
             lambda response: (logger.error(response["msg"]), callback(response["msg"])),
         )
 
+    def get_data_hash(self) -> str:
+        return self._send_request("data_hash").get("data_hash", "")
+
+    def get_data_links(self) -> dict[str, str]:
+        return self._send_request("data_links", version=os.environ["VERSION"])
+
     @staticmethod
     def _send_request(namespace, **kwargs) -> dict:
         return requests.get(
