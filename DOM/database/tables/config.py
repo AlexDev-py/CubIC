@@ -3,7 +3,7 @@ import os
 from loguru import logger
 from sqlite3_api import Table
 
-from ..field_types import Resolution
+from ..field_types import Resolution, ALLOWED_RESOLUTION
 
 
 class Config(Table):
@@ -28,6 +28,11 @@ class Config(Table):
             db.api.execute("DROP TABLE config")
             db.insert()
             config = db.filter()
+
+        if config.resolution not in ALLOWED_RESOLUTION:
+            logger.warning(f"Неизвестное разрешение {config.resolution}")
+            config.update(resolution=ALLOWED_RESOLUTION[-1])
+            return
 
         config.add_to_env()
 
