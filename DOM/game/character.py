@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from .item import Item
 
+characters: list[Character] = []
+
 
 @dataclass
 class Character:
@@ -28,11 +30,14 @@ class Character:
         ]
 
 
-with open(
-    os.path.join(os.environ["CHARACTERS_PATH"], "characters.json"), encoding="utf-8"
-) as file:
-    characters: list[Character] = [
-        Character(**character) for character in json.load(file)["characters"]
-    ]
+def init() -> None:
+    if not len(characters):
+        if os.path.isfile(
+            file_path := os.path.join(os.environ["CHARACTERS_PATH"], "characters.json")
+        ):
+            with open(file_path, encoding="utf-8") as file:
+                for character in json.load(file)["characters"]:
+                    characters.append(Character(**character))
+
 
 __all__ = ["Character", "characters"]

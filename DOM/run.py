@@ -47,8 +47,7 @@ os.environ["BUTTONS_PATH"] = os.path.join(os.environ["APP_DIR"], "buttons")
 # Путь к директории с локациями
 os.environ["LOCATIONS_PATH"] = os.path.join(os.environ["APP_DIR"], "locations")
 # Шрифт
-if os.path.isfile(font_path := os.path.join(os.environ["APP_DIR"], "font.ttf")):
-    os.environ["FONT"] = font_path
+os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
 # Сервер
@@ -62,6 +61,7 @@ info = pygame.display.Info()
 # TODO: Нужно запретить ставить разрешение больше чем максимально возможное
 # TODO: Нужно сделать динамическую генерацию возможных разрешений,
 #  в зависимости от разрешения монитора
+# TODO: Сделать экран загрузки перехода из меню клиента в игровой клиент
 os.environ["MAX_RESOLUTION"] = f"{info.current_w};{info.current_h}"
 
 logger = __import__("logger").logger

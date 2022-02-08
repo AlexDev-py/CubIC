@@ -142,7 +142,6 @@ class StartAppScreen(Group):
         if not os.path.isfile(
             data_file_path
         ) or self.network_client.get_data_hash() != hashing.get_hash(data_file_path):
-            print(self.network_client.get_data_hash(), hashing.get_hash(data_file_path))
             self.fix_media_files()
             return
 
@@ -154,7 +153,6 @@ class StartAppScreen(Group):
             if not os.path.isfile(file_path) or file_hash != hashing.get_hash(
                 file_path
             ):
-                print(file_path, file_hash, hashing.get_hash(file_path))
                 self.fix_media_files()
                 break
 
@@ -170,6 +168,8 @@ class StartAppScreen(Group):
         archive = BytesIO(response.read())
         with zipfile.ZipFile(archive) as zip_file:  # Разархивация
             zip_file.extractall(os.environ["APP_DIR"])
+
+        __import__("game")
 
     def render(self) -> None:
         """
