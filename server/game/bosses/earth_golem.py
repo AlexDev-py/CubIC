@@ -7,6 +7,7 @@ from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cor
 
 if ty.TYPE_CHECKING:
     from ..player import Player
+    from ..room import Room
 
 
 class EarthGolem(BaseBoss):
@@ -19,7 +20,7 @@ class EarthGolem(BaseBoss):
         return 40
 
     def first_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         closest_player = get_closest_player(self.pos, players)
         delta_cord = get_delta_cord(self.pos, closest_player.character.pos, delta=1)
@@ -27,13 +28,13 @@ class EarthGolem(BaseBoss):
         self.hit([cord], players, 4)
 
     def second_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         cords = get_all_neighboring_cords(*self.pos)
         self.hit(cords, players, 1)
 
     def third_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         closest_player = get_closest_player(self.pos, players)
         delta_cord = get_delta_cord(self.pos, closest_player.character.pos, delta=2)
@@ -42,7 +43,7 @@ class EarthGolem(BaseBoss):
         self.hit(cords, players, 2)
 
     def fourth_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         cords = [player.character.pos for player in players]
         self.hit(list(set(cords)), players, 2)

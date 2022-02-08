@@ -61,6 +61,29 @@ def get_closest_player(pos: Cord, players: list[Player]) -> Player:
     return closest_player
 
 
+def get_ray(
+    cord: Cord, delta: tuple[int, int], field_size: int, length: int | None = None
+) -> list[Cord]:
+    """
+    :param cord: Начальная точка.
+    :param delta: Направление.
+    :param field_size: Размер поля.
+    :param length: Длина луча.
+    :return: Точки луча.
+    """
+    cords = []
+
+    while True:
+        cord = (cord[0] + delta[0], cord[1] + delta[1])
+        if not (0 <= cord[0] < field_size) or not (0 <= cord[1] < field_size):
+            break
+        cords.append(tuple(cord))
+        if length and len(cords) >= length:
+            break
+
+    return cords
+
+
 def get_delta_cord(
     first: Cord, second: Cord, delta: int | None = None
 ) -> tuple[int, int]:
