@@ -84,6 +84,29 @@ def get_ray(
     return cords
 
 
+def get_rect(center: Cord, radius: int, field_size: int) -> list[Cord]:
+    """
+    :param center: Центр квадрата
+    :param radius: Радиус вписанной окружности.
+    :param field_size: Размер поля.
+    :return: Квадрат.
+    """
+    if radius == 1:
+        return get_all_neighboring_cords(*center)
+
+    cords = set()
+    for i, cord in enumerate(get_ray(center, (-1, -1), field_size, radius)):
+        cords |= set(get_ray(cord, (1, 0), field_size, (i + 1) * 2 + ((i + 1) % 2)))
+        cords |= set(get_ray(cord, (0, 1), field_size, (i + 1) * 2 + ((i + 1) % 2)))
+        cords.add(cord)
+    for i, cord in enumerate(get_ray(center, (1, 1), field_size, radius)):
+        cords |= set(get_ray(cord, (-1, 0), field_size, (i + 1) * 2 + ((i + 1) % 2)))
+        cords |= set(get_ray(cord, (0, -1), field_size, (i + 1) * 2 + ((i + 1) % 2)))
+        cords.add(cord)
+
+    return list(cords)
+
+
 def get_delta_cord(
     first: Cord, second: Cord, delta: int | None = None
 ) -> tuple[int, int]:
