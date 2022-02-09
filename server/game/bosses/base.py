@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 
 if ty.TYPE_CHECKING:
     from ..player import Player
+    from ..room import Room
 
 
 class BaseBoss(ABC):
@@ -28,25 +29,25 @@ class BaseBoss(ABC):
 
     @abstractmethod
     def first_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         pass
 
     @abstractmethod
     def second_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         pass
 
     @abstractmethod
     def third_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         pass
 
     @abstractmethod
     def fourth_skill(
-        self, field: list[list[True | False]], players: list[Player]
+        self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
         pass
 
