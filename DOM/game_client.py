@@ -233,6 +233,20 @@ class Field(WidgetsGroup):
             sprite=self._field_image,
         )
 
+        self._boss_image = load_image(
+            "diablo.png",
+            namespace=os.environ["BOSSES_PATH"],
+            size=(None, round(self.block_height * 2)),
+            save_ratio=True,
+        )
+
+        self._enemy_image = load_image(
+            "mogus.png",
+            namespace=os.environ["ENEMIES_PATH"],
+            size=(None, round(self.block_height)),
+            save_ratio=True,
+        )
+
         self.update_field()
 
     def _generate_location_map(self) -> None:
@@ -242,7 +256,7 @@ class Field(WidgetsGroup):
         self.floors: list[tuple[pg.Surface, pg.Rect]] = []  # Элементы пола
         self.walls: list[tuple[pg.Surface, pg.Rect]] = []  # Элементы стен
 
-        block_width, block_height = (
+        self.block_width, self.block_height = (
             self.width / len(self.network_client.room.field[0]),
             self.height / len(self.network_client.room.field),
         )  # Размеры одного блока
@@ -250,12 +264,12 @@ class Field(WidgetsGroup):
         for i, (board_line, location_line) in enumerate(
             zip(self.network_client.room.field, self.network_client.room.location)
         ):
-            y = block_height * i
+            y = self.block_height * i
             for j, (board_block, location_block) in enumerate(
                 zip(board_line, location_line)
             ):
-                x = block_width * j
-                rect = pg.Rect(x, y, block_width, block_height * 1.3)
+                x = self.block_width * j
+                rect = pg.Rect(x, y, self.block_width, self.block_height * 1.3)
                 if board_block is True:  # Если блок - элемента пола
                     self.floors.append(
                         (
@@ -267,8 +281,8 @@ class Field(WidgetsGroup):
                                     "floors",
                                 ),
                                 size=(
-                                    round(block_width) + 1,
-                                    round(block_height * 1.3),
+                                    round(self.block_width) + 1,
+                                    round(self.block_height * 1.3),
                                 ),
                             ),
                             rect,
@@ -285,8 +299,8 @@ class Field(WidgetsGroup):
                                     "walls",
                                 ),
                                 size=(
-                                    round(block_width) + 1,
-                                    round(block_height * 1.3),
+                                    round(self.block_width) + 1,
+                                    round(self.block_height * 1.3),
                                 ),
                             ),
                             rect,
@@ -300,8 +314,44 @@ class Field(WidgetsGroup):
         image = pg.Surface(self._field_image.get_size())
         for floor_image, floor_rect in self.floors:
             image.blit(floor_image, floor_rect)
+
         for wall_image, wall_rect in self.walls:
             image.blit(wall_image, wall_rect)
+
+        boss_rect = pg.Rect(
+            self.block_width * self.network_client.room.boss.pos[1]
+            - self.block_width * 0.5,
+            self.block_height * self.network_client.room.boss.pos[0] - self.block_width,
+            self.block_width,
+            self.block_height,
+        )
+        image.blit(self._boss_image, boss_rect)
+
+        for player in self.network_client.room.players:
+            player_image = load_image(
+                player.character.icon,
+                namespace=os.environ["CHARACTERS_PATH"],
+                size=(None, round(self.block_height * 1.5)),
+                save_ratio=True,
+            )
+            player_rect = pg.Rect(
+                self.block_width * player.character.pos[1]
+                - ((player_image.get_width() - self.block_width) / 2),
+                self.block_height * player.character.pos[0] - self.block_width * 0.5,
+                self.block_width,
+                self.block_height,
+            )
+            image.blit(player_image, player_rect)
+
+        for enemy in self.network_client.room.enemies:
+            enemy_rect = pg.Rect(
+                self.block_width * enemy.pos[1]
+                + (self.block_width / 2 - self._enemy_image.get_width() / 2),
+                self.block_height * enemy.pos[0],
+                self.block_width,
+                self.block_height,
+            )
+            image.blit(self._enemy_image, enemy_rect)
 
         self.field_image = image
 
@@ -589,7 +639,8 @@ class PlayerWidget(WidgetsGroup):
             sprite=load_image(
                 player.character.icon,
                 namespace=os.environ["CHARACTERS_PATH"],
-                size=(icon_size, icon_size),
+                size=(None, icon_size),
+                save_ratio=True,
             ),
         )
 

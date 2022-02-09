@@ -164,7 +164,8 @@ class PlayerWidget(WidgetsGroup):
         self.icon.sprite = load_image(
             self.player.character.icon,
             namespace=os.environ["CHARACTERS_PATH"],
-            size=(icon_size, icon_size),
+            size=(None, icon_size),
+            save_ratio=True,
         )
 
 
@@ -234,12 +235,13 @@ class CharacterButton(WidgetsGroup):
             f"{self.name}-IconLabel",
             x=0,
             y=lambda obj: round(self.rect.height / 2 - obj.rect.height / 2),
-            width=icon_size,
-            height=icon_size,
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
             sprite=load_image(
                 character.icon,
                 namespace=os.environ["CHARACTERS_PATH"],
-                size=(icon_size, icon_size),
+                size=(None, icon_size * 3),
+                save_ratio=True,
             ),
         )
 
@@ -274,7 +276,6 @@ class CharacterButton(WidgetsGroup):
 class CharactersMenu(WidgetsGroup):
     def __init__(self, parent: Lobby):
         font_size = int(os.environ["font_size"])
-        icon_size = int(os.environ["icon_size"])
         font = os.environ.get("font")
 
         super(CharactersMenu, self).__init__(
@@ -296,7 +297,13 @@ class CharactersMenu(WidgetsGroup):
             self.characters.append(
                 CharacterButton(
                     self,
-                    y=self.label.rect.bottom + icon_size * i + 10 * (i + 1),
+                    y=self.label.rect.bottom
+                    + (
+                        0
+                        if not len(self.characters)
+                        else self.characters[-1].rect.bottom
+                    )
+                    + 10 * (i + 1),
                     character=character,
                     character_id=i,
                 )

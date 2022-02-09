@@ -32,6 +32,8 @@ PasswordTextFilter = LengthTextFilter(40) & AlphabetTextFilter(
     list("-_@$!%*#?&"), nums=True, eng=True, rus=False, ignore_case=True
 )
 
+_images_cash = {}
+
 
 class FinishStatus:
     """
@@ -120,7 +122,9 @@ def load_image(
         # Возвращаем пустое изображение
         return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
 
-    image = pg.image.load(path).convert_alpha()
+    if not (image := _images_cash.get(path)):
+        image = pg.image.load(path).convert_alpha()
+        _images_cash[path] = image
     if size is not None:
         if not save_ratio:
             image = pg.transform.scale(image, size)

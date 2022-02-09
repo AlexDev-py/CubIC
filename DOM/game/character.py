@@ -23,6 +23,7 @@ class Character:
     move_speed: int = 0
     life_abduction: int = 0
     items: list[Item | None] = field(default_factory=list)
+    pos: tuple[int, int] = (0, 0)
 
     def __post_init__(self):
         self.items = [

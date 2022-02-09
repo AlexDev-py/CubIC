@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as ty
 
+from .boss import Boss
+from .enemy import Enemy
 from .item import Item
 from .player import Player
 
@@ -16,6 +18,9 @@ class Room:
         self.lvl = 1
 
         self.players: list[Player] = []
+        self.boss: Boss = ...
+        self.enemies: list[Enemy] = []
+
         self.field: list[list[True | False]] = ...
         self.location_name: str = ...
         self.location: list[list[int]] = ...
@@ -47,6 +52,8 @@ class Room:
         location: list[list],
         shop: list[dict],
         players: list[dict],
+        boss: dict,
+        enemies: list[dict],
     ) -> None:
         self.lvl = lvl
         self.field = field
@@ -54,3 +61,5 @@ class Room:
         self.location = location
         self.shop = [Item(**item) if item else None for item in shop]
         self.players = [Player(**player) for player in players]
+        self.boss = Boss(**boss)
+        self.enemies = [Enemy(**enemy) for enemy in enemies]
