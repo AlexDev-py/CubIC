@@ -4,7 +4,7 @@ import typing as ty
 import random
 
 from .base import BaseBoss
-from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cord, get_ray
+from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cord, get_ray, get_rect
 
 if ty.TYPE_CHECKING:
     from ..player import Player
@@ -32,8 +32,8 @@ class SwordMaster(BaseBoss):
     def second_skill(
             self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
-        pass
-    # TODO: cделать атаку радиус 2, вокруг, я сделаю (Саша)
+        cords = get_rect(self.pos, radius=2, field_size=len(room.field))
+        self.hit(cords, players, 4)
 
 
     def third_skill(
