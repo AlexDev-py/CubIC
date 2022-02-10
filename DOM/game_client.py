@@ -1069,6 +1069,7 @@ class EnemyMenu(WidgetsGroup):
         self.add_stat("hp.png", enemy.data.hp)
         self.add_stat("damage.png", enemy.data.damage)
         self.add_stat("attack_range.png", enemy.data.attack_range)
+        self.add_stat("coins.png", enemy.data.reward)
 
         self.stats_widget.add(*self.stats)
 
