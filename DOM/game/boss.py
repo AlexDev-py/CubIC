@@ -5,5 +5,5 @@ from dataclasses import dataclass
 class Boss:
     name: str
     hp: int
-    pos: tuple[int, int]
+    pos: list[int, int]
     desc: list[dict]

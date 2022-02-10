@@ -243,7 +243,7 @@ class Field(WidgetsGroup):
         self._enemy_image = load_image(
             "mogus.png",
             namespace=os.environ["ENEMIES_PATH"],
-            size=(None, round(self.block_height)),
+            size=(None, round(self.block_height * 1.25)),
             save_ratio=True,
         )
 
@@ -254,7 +254,7 @@ class Field(WidgetsGroup):
         Создает картинку поля.
         """
         self.floors: list[tuple[pg.Surface, pg.Rect]] = []  # Элементы пола
-        self.walls: list[tuple[pg.Surface, pg.Rect]] = []  # Элементы стен
+        self.walls: list[list[tuple[pg.Surface, pg.Rect] | None]] = []  # Элементы стен
 
         self.block_width, self.block_height = (
             self.width / len(self.network_client.room.field[0]),
@@ -264,13 +264,14 @@ class Field(WidgetsGroup):
         for i, (board_line, location_line) in enumerate(
             zip(self.network_client.room.field, self.network_client.room.location)
         ):
+            walls_line: list[tuple[pg.Surface, pg.Rect] | None] = []
             y = self.block_height * i
             for j, (board_block, location_block) in enumerate(
                 zip(board_line, location_line)
             ):
                 x = self.block_width * j
-                rect = pg.Rect(x, y, self.block_width, self.block_height * 1.3)
                 if board_block is True:  # Если блок - элемента пола
+                    rect = pg.Rect(x, y, self.block_width, self.block_height)
                     self.floors.append(
                         (
                             load_image(
@@ -288,8 +289,15 @@ class Field(WidgetsGroup):
                             rect,
                         )
                     )
+                    walls_line.append(None)
                 else:  # Если блок - элемент стены
-                    self.walls.append(
+                    rect = pg.Rect(
+                        x,
+                        y - self.block_height * 0.3,
+                        self.block_width,
+                        self.block_height * 1.3,
+                    )
+                    walls_line.append(
                         (
                             load_image(
                                 f"wall{location_block}.png",
@@ -306,6 +314,7 @@ class Field(WidgetsGroup):
                             rect,
                         )
                     )
+            self.walls.append(walls_line)
 
     def update_field(self) -> None:
         """
@@ -315,9 +324,6 @@ class Field(WidgetsGroup):
         for floor_image, floor_rect in self.floors:
             image.blit(floor_image, floor_rect)
 
-        for wall_image, wall_rect in self.walls:
-            image.blit(wall_image, wall_rect)
-
         boss_rect = pg.Rect(
             self.block_width * self.network_client.room.boss.pos[1]
             - self.block_width * 0.5,
@@ -325,8 +331,19 @@ class Field(WidgetsGroup):
             self.block_width,
             self.block_height,
         )
-        image.blit(self._boss_image, boss_rect)
 
+        enemies: dict[tuple[int, int], tuple[pg.Surface, pg.Rect]] = {}
+        for enemy in self.network_client.room.enemies:
+            enemy_rect = pg.Rect(
+                self.block_width * enemy.pos[1]
+                - ((self._enemy_image.get_width() - self.block_width) / 2),
+                self.block_height * enemy.pos[0] - self.block_width * 0.25,
+                self.block_width,
+                self.block_height,
+            )
+            enemies[tuple(enemy.pos)] = (self._enemy_image, enemy_rect)
+
+        players: dict[tuple[int, int], tuple[pg.Surface, pg.Rect]] = {}
         for player in self.network_client.room.players:
             player_image = load_image(
                 player.character.icon,
@@ -341,17 +358,19 @@ class Field(WidgetsGroup):
                 self.block_width,
                 self.block_height,
             )
-            image.blit(player_image, player_rect)
+            players[tuple(player.character.pos)] = (player_image, player_rect)
 
-        for enemy in self.network_client.room.enemies:
-            enemy_rect = pg.Rect(
-                self.block_width * enemy.pos[1]
-                + (self.block_width / 2 - self._enemy_image.get_width() / 2),
-                self.block_height * enemy.pos[0],
-                self.block_width,
-                self.block_height,
-            )
-            image.blit(self._enemy_image, enemy_rect)
+        for i, walls_line in enumerate(self.walls):
+            for j, wall in enumerate(walls_line):
+                if wall:
+                    image.blit(*wall)
+                j -= 1
+                if enemy := enemies.get((i, j)):
+                    image.blit(*enemy)
+                if player := players.get((i, j)):
+                    image.blit(*player)
+                if tuple(self.network_client.room.boss.pos) == (i, j):
+                    image.blit(self._boss_image, boss_rect)
 
         self.field_image = image
 
