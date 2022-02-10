@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import typing as ty
+from dataclasses import dataclass
 
 import pygame as pg
 
@@ -21,7 +22,12 @@ if ty.TYPE_CHECKING:
     from network import NetworkClient
     from game.player import Player
     from game.item import Item
+    from game.enemy import Enemy
+    from game.boss import Boss
     from base.types import CordFunction
+
+
+# ==== MENUS ====
 
 
 class EscMenu(Alert):
@@ -198,6 +204,31 @@ class ItemDropMenu(DropMenu):
                         self.hide()
 
 
+# ==== FIELD ====
+
+
+@dataclass
+class EntityWidget:
+    icon: pg.Surface
+    rect: pg.Rect
+    data: ...
+
+
+@dataclass
+class EnemyWidget(EntityWidget):
+    data: Enemy
+
+
+@dataclass
+class BossWidget(EntityWidget):
+    data: Boss
+
+
+@dataclass
+class CharacterWidget(EntityWidget):
+    data: Player
+
+
 class Field(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
         """
@@ -246,6 +277,10 @@ class Field(WidgetsGroup):
             size=(None, round(self.block_height * 1.25)),
             save_ratio=True,
         )
+
+        self.boss: BossWidget = ...
+        self.enemies: dict[tuple[int, int], EnemyWidget] = {}
+        self.characters: dict[tuple[int, int], CharacterWidget] = {}
 
         self.update_field()
 
@@ -324,26 +359,34 @@ class Field(WidgetsGroup):
         for floor_image, floor_rect in self.floors:
             image.blit(floor_image, floor_rect)
 
-        boss_rect = pg.Rect(
-            self.block_width * self.network_client.room.boss.pos[1]
-            - self.block_width * 0.5,
-            self.block_height * self.network_client.room.boss.pos[0] - self.block_width,
-            self.block_width,
-            self.block_height,
+        self.boss = BossWidget(
+            self._boss_image,
+            rect=pg.Rect(
+                self.block_width * self.network_client.room.boss.pos[1]
+                - self.block_width * 0.5,
+                self.block_height * self.network_client.room.boss.pos[0]
+                - self.block_width,
+                self._boss_image.get_width(),
+                self._boss_image.get_height(),
+            ),
+            data=self.network_client.room.boss,
         )
 
-        enemies: dict[tuple[int, int], tuple[pg.Surface, pg.Rect]] = {}
+        self.enemies.clear()
         for enemy in self.network_client.room.enemies:
-            enemy_rect = pg.Rect(
-                self.block_width * enemy.pos[1]
-                - ((self._enemy_image.get_width() - self.block_width) / 2),
-                self.block_height * enemy.pos[0] - self.block_width * 0.25,
-                self.block_width,
-                self.block_height,
+            self.enemies[tuple(enemy.pos)] = EnemyWidget(
+                self._enemy_image,
+                rect=pg.Rect(
+                    self.block_width * enemy.pos[1]
+                    - ((self._enemy_image.get_width() - self.block_width) / 2),
+                    self.block_height * enemy.pos[0] - self.block_width * 0.25,
+                    self._enemy_image.get_width(),
+                    self._enemy_image.get_height(),
+                ),
+                data=enemy,
             )
-            enemies[tuple(enemy.pos)] = (self._enemy_image, enemy_rect)
 
-        players: dict[tuple[int, int], tuple[pg.Surface, pg.Rect]] = {}
+        self.characters.clear()
         for player in self.network_client.room.players:
             player_image = load_image(
                 player.character.icon,
@@ -355,22 +398,24 @@ class Field(WidgetsGroup):
                 self.block_width * player.character.pos[1]
                 - ((player_image.get_width() - self.block_width) / 2),
                 self.block_height * player.character.pos[0] - self.block_width * 0.5,
-                self.block_width,
-                self.block_height,
+                player_image.get_width(),
+                player_image.get_height(),
             )
-            players[tuple(player.character.pos)] = (player_image, player_rect)
+            self.characters[tuple(player.character.pos)] = CharacterWidget(
+                player_image, rect=player_rect, data=player
+            )
 
         for i, walls_line in enumerate(self.walls):
             for j, wall in enumerate(walls_line):
                 if wall:
                     image.blit(*wall)
                 j -= 1
-                if enemy := enemies.get((i, j)):
-                    image.blit(*enemy)
-                if player := players.get((i, j)):
-                    image.blit(*player)
-                if tuple(self.network_client.room.boss.pos) == (i, j):
-                    image.blit(self._boss_image, boss_rect)
+                if enemy := self.enemies.get((i, j)):
+                    image.blit(enemy.icon, enemy.rect)
+                if character := self.characters.get((i, j)):
+                    image.blit(character.icon, character.rect)
+                if tuple(self.boss.data.pos) == (i, j):
+                    image.blit(self.boss.icon, self.boss.rect)
 
         self.field_image = image
 
@@ -383,6 +428,18 @@ class Field(WidgetsGroup):
         self._field_image = value
         if hasattr(self, "_label"):
             self._label.sprite = self._field_image
+
+    def get_global_rect_of(self, rect: pg.Rect) -> pg.Rect:
+        rect = rect.copy()
+
+        self_rect: pg.Rect = self.get_global_rect()
+        rect.x += self_rect.x + self.padding + self.border_width
+        rect.y += self_rect.y + self.padding + self.border_width
+
+        return rect
+
+
+# ==== STATS ====
 
 
 class StatWidget(WidgetsGroup):
@@ -504,6 +561,9 @@ class StatsWidget(WidgetsGroup):
                 widget.value.text = value
 
 
+# ==== ITEMS ====
+
+
 class ItemWidget(WidgetsGroup):
     def __init__(self, name: str, x: int, y: int, item: Item | None):
         """
@@ -620,156 +680,6 @@ class ItemsWidget(WidgetsGroup):
                 item_widget.item.name if item_widget.item else None
             ):
                 item_widget.init(item)
-
-
-class PlayerWidget(WidgetsGroup):
-    def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
-        """
-        Виджет игрока.
-        Объединяет информацию об игроке, его предметы и характеристики.
-        :param parent: ...
-        :param player: Экземпляр игрока.
-        :param index: Индекс(для определения координаты Y).
-        """
-        font_size = int(os.environ["font_size"])
-        icon_size = int(os.environ["icon_size"])
-        font = os.environ.get("font")
-
-        self.player = player
-        self.network_client = parent.network_client
-
-        # Определяем положение виджета
-        y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
-        super(PlayerWidget, self).__init__(
-            None,
-            f"{player.username}-Widget",
-            x=0,
-            y=y,
-            width=parent.rect.width - parent.padding * 2,
-        )
-
-        self.icon = Label(
-            self,
-            f"{self.name}-IconLabel",
-            x=0,
-            y=0,
-            width=icon_size,
-            height=icon_size,
-            sprite=load_image(
-                player.character.icon,
-                namespace=os.environ["CHARACTERS_PATH"],
-                size=(None, icon_size),
-                save_ratio=True,
-            ),
-        )
-
-        self.username = Label(
-            self,
-            f"{self.name}-UsernameLabel",
-            x=self.icon.rect.right + 5,
-            y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
-            text=player.username,
-            color=pg.Color("red"),
-            font=pg.font.Font(font, font_size),
-        )
-
-        self.line = Line(
-            self,
-            x=0,
-            y=self.icon.rect.bottom + 5,
-            width=self.rect.width,
-            height=2,
-            color=pg.Color("red"),
-        )  # Линия - разделитель
-
-        self.items = ItemsWidget(self)
-        self.stats = StatsWidget(self)
-        self.drop_menu: ItemDropMenu = ...
-
-    def update_data(self, player: Player) -> None:
-        """
-        Обновляет данные об игроке.
-        :param player: Новый экземпляр игрока.
-        """
-        self.player = player
-        self.items.update_items(self.player)
-        self.stats.update_stats(self.player)
-
-    def handle_event(self, event: pg.event.Event) -> None:
-        super(PlayerWidget, self).handle_event(event)
-        if self.enabled:
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if event.button == pg.BUTTON_RIGHT:
-                    # Открытие выпадающего меню предмета
-                    if (
-                        self.items.get_global_rect().collidepoint(event.pos)
-                        and self.drop_menu is not ...
-                    ):
-                        for i, item_widget in enumerate(self.items.items):
-                            if item_widget.item:
-                                # Открытие при нажатии на предмет
-                                if item_widget.get_global_rect().collidepoint(
-                                    event.pos
-                                ):
-                                    self.drop_menu.init(item_widget.item, i)
-                                    self.drop_menu.open(event.pos)
-                                    self.drop_menu.update()
-                                    break
-
-
-class PlayersMenu(WidgetsGroup):
-    def __init__(self, parent: GameClientScreen):
-        """
-        Виджет игроков.
-        :param parent: ...
-        """
-        resolution = Resolution.converter(os.environ["resolution"])
-
-        self.network_client = parent.network_client
-
-        super(PlayersMenu, self).__init__(
-            parent,
-            "PlayersMenu",
-            x=0,
-            y=0,
-            width=parent.field.rect.left,
-            height=resolution.height,
-            padding=5,
-        )
-
-        self.players: list[PlayerWidget] = []  # Список игроков
-
-        self.update_players()
-
-    def update_players(self) -> None:
-        """
-        Обновляет список игроков.
-        """
-        # Удаление старых виджетов
-        self.parent.remove(*(widget.drop_menu for widget in self.players))
-        self.remove(*self.players)
-
-        self.players.clear()
-
-        # Создание новых виджетов
-        for i, player in enumerate(self.network_client.room.players):
-            self.players.append(PlayerWidget(self, player, index=i))
-        self.add(*self.players)
-
-        # Создание выпадающих меню
-        for widget in self.players:
-            widget.drop_menu = ItemDropMenu(
-                widget, can_remove=widget.player.uid == self.network_client.user.uid
-            )
-
-    def update_player(self, player: Player) -> None:
-        """
-        Обновление одного из игроков.
-        :param player: Экземпляр игрока.
-        """
-        # Поиск по uid
-        players = [p for p in self.players if p.player.uid == player.uid]
-        players[0].update_data(player)
 
 
 class ItemStand(WidgetsGroup):
@@ -947,6 +857,390 @@ class ItemDescription(WidgetsGroup):
         return widget
 
 
+# ==== PLAYERS ====
+
+
+class PlayerWidget(WidgetsGroup):
+    def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
+        """
+        Виджет игрока.
+        Объединяет информацию об игроке, его предметы и характеристики.
+        :param parent: ...
+        :param player: Экземпляр игрока.
+        :param index: Индекс(для определения координаты Y).
+        """
+        font_size = int(os.environ["font_size"])
+        icon_size = int(os.environ["icon_size"])
+        font = os.environ.get("font")
+
+        self.player = player
+        self.network_client = parent.network_client
+
+        # Определяем положение виджета
+        y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
+        super(PlayerWidget, self).__init__(
+            None,
+            f"{player.username}-Widget",
+            x=0,
+            y=y,
+            width=parent.rect.width - parent.padding * 2,
+        )
+
+        self.icon = Label(
+            self,
+            f"{self.name}-IconLabel",
+            x=0,
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            sprite=load_image(
+                player.character.icon,
+                namespace=os.environ["CHARACTERS_PATH"],
+                size=(None, icon_size),
+                save_ratio=True,
+            ),
+        )
+
+        self.username = Label(
+            self,
+            f"{self.name}-UsernameLabel",
+            x=self.icon.rect.right + 5,
+            y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
+            text=player.username,
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+        )
+
+        self.line = Line(
+            self,
+            x=0,
+            y=self.icon.rect.bottom + 5,
+            width=self.rect.width,
+            height=2,
+            color=pg.Color("red"),
+        )  # Линия - разделитель
+
+        self.items = ItemsWidget(self)
+        self.stats = StatsWidget(self)
+        self.drop_menu: ItemDropMenu = ...
+
+    def update_data(self, player: Player) -> None:
+        """
+        Обновляет данные об игроке.
+        :param player: Новый экземпляр игрока.
+        """
+        self.player = player
+        self.items.update_items(self.player)
+        self.stats.update_stats(self.player)
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        super(PlayerWidget, self).handle_event(event)
+        if self.enabled:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == pg.BUTTON_RIGHT:
+                    # Открытие выпадающего меню предмета
+                    if (
+                        self.items.get_global_rect().collidepoint(event.pos)
+                        and self.drop_menu is not ...
+                    ):
+                        for i, item_widget in enumerate(self.items.items):
+                            if item_widget.item:
+                                # Открытие при нажатии на предмет
+                                if item_widget.get_global_rect().collidepoint(
+                                    event.pos
+                                ):
+                                    self.drop_menu.init(item_widget.item, i)
+                                    self.drop_menu.open(event.pos)
+                                    self.drop_menu.update()
+                                    break
+
+
+class PlayersMenu(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        """
+        Виджет игроков.
+        :param parent: ...
+        """
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        self.network_client = parent.network_client
+
+        super(PlayersMenu, self).__init__(
+            parent,
+            "PlayersMenu",
+            x=0,
+            y=0,
+            width=parent.field.rect.left,
+            height=resolution.height,
+            padding=5,
+        )
+
+        self.players: list[PlayerWidget] = []  # Список игроков
+
+        self.update_players()
+
+    def update_players(self) -> None:
+        """
+        Обновляет список игроков.
+        """
+        # Удаление старых виджетов
+        self.parent.remove(*(widget.drop_menu for widget in self.players))
+        self.remove(*self.players)
+
+        self.players.clear()
+
+        # Создание новых виджетов
+        for i, player in enumerate(self.network_client.room.players):
+            self.players.append(PlayerWidget(self, player, index=i))
+        self.add(*self.players)
+
+        # Создание выпадающих меню
+        for widget in self.players:
+            widget.drop_menu = ItemDropMenu(
+                widget, can_remove=widget.player.uid == self.network_client.user.uid
+            )
+
+    def update_player(self, player: Player) -> None:
+        """
+        Обновление одного из игроков.
+        :param player: Экземпляр игрока.
+        """
+        # Поиск по uid
+        players = [p for p in self.players if p.player.uid == player.uid]
+        players[0].update_data(player)
+
+
+# ==== CLIENT ====
+
+
+class EnemyMenu(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(EnemyMenu, self).__init__(
+            parent,
+            "EnemyMenu",
+            x=0,
+            y=lambda obj: round(resolution.height - obj.rect.height),
+            width=parent.field.rect.left,
+            padding=10,
+            hidden=True,
+        )
+        self.disable()
+
+        self.icon = Label(
+            self,
+            f"{self.name}-IconLabel",
+            x=0,
+            y=0,
+            width=lambda obj: (obj.sprite.get_width() if obj.sprite else 1),
+            height=lambda obj: (obj.sprite.get_height() if obj.sprite else 1),
+            text="",
+        )
+
+        self.name = Label(
+            self,
+            f"{self.name}-NameLabel",
+            x=lambda obj: self.icon.rect.right + 5,
+            y=lambda obj: round(self.icon.rect.height / 2 - obj.rect.height / 2),
+            text="...",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+        )
+
+        self.stats_widget = WidgetsGroup(
+            self,
+            f"{self.name}-StatsWidget",
+            x=0,
+            y=lambda obj: self.icon.rect.bottom + 5,
+            width=self.rect.width - self.padding * 2,
+        )
+        self.stats: list[StatWidget] = []
+
+    def init(self, enemy: EnemyWidget) -> None:
+        self.stats_widget.remove(*self.stats)
+        self.stats.clear()
+
+        self.icon.sprite = enemy.icon
+        self.name.text = enemy.data.name
+
+        self.add_stat("hp.png", enemy.data.hp)
+        self.add_stat("damage.png", enemy.data.damage)
+        self.add_stat("attack_range.png", enemy.data.attack_range)
+
+        self.stats_widget.add(*self.stats)
+
+        self.enable()
+        self.show()
+
+    def add_stat(self, icon: str, value: int) -> StatWidget:
+        """
+        Добавление характеристики.
+        Автоматически смещает характеристику на новую линию,
+        если нехватает места для ее отображения.
+        :param icon: Название файла с иконкой.
+        :param value: Значение характеристики.
+        :return: Виджет характеристики.
+        """
+        if not len(self.stats):  # Если это первая характеристика
+            x = y = 0
+        else:
+            y = self.stats[-1].rect.y
+            x = self.stats[-1].rect.right
+            # Если не хватает места
+            if x + self.stats[-1].rect.width > self.stats_widget.rect.width:
+                x = 0
+                y += self.stats[-1].rect.height
+
+        widget = StatWidget(f"{self.name}-{icon}-StatWidget", x, y, icon, str(value))
+        self.stats.append(widget)  # Добавляем в список
+        return widget
+
+
+class BossSkill(WidgetsGroup):
+    def __init__(self, name: str, y: int, width: int, skill: dict, index: int):
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(BossSkill, self).__init__(None, name, x=0, y=y, width=width)
+
+        self.desc = Text(
+            self,
+            f"{name}-DescLabel",
+            x=0,
+            y=0,
+            width=round(width * 0.8),
+            text=f"{index}. " + (skill.get("desc") or ""),
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+            soft_split=True,
+        )
+
+        self.stats: list[StatWidget] = []
+
+        if damage := skill.get("damage"):
+            self.add_stat("damage.png", damage)
+        if heal := skill.get("heal"):
+            self.add_stat("hp.png", heal)
+        if life_abduction := skill.get("life_abduction"):
+            self.add_stat("life_abduction.png", life_abduction)
+
+        self.add(*self.stats)
+
+    def add_stat(self, icon: str, value: str) -> StatWidget:
+        """
+        Добавление характеристики.
+        Автоматически смещает характеристику на новую линию,
+        если нехватает места для ее отображения.
+        :param icon: Название файла с иконкой.
+        :param value: Значение характеристики.
+        :return: Виджет характеристики.
+        """
+        if not len(self.stats):  # Если это первая характеристика
+            y = 0
+            x = self.desc.rect.right + 5
+        else:
+            y = self.stats[-1].rect.y
+            x = self.stats[-1].rect.right
+            # Если не хватает места
+            if x + self.stats[-1].rect.width > self.rect.width:
+                x = 0
+                y += self.stats[-1].rect.height
+                if y <= self.desc.rect.bottom:
+                    y = self.desc.rect.bottom + 5
+
+        widget = StatWidget(f"{self.name}-{icon}-StatWidget", x, y, icon, str(value))
+        self.stats.append(widget)  # Добавляем в список
+        return widget
+
+
+class BossMenu(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(BossMenu, self).__init__(
+            parent,
+            "BossMenu",
+            x=0,
+            y=lambda obj: round(resolution.height - obj.rect.height),
+            width=parent.field.rect.left,
+            padding=10,
+            hidden=True,
+        )
+        self.disable()
+
+        self.icon = Label(
+            self,
+            f"{self.name}-IconLabel",
+            x=0,
+            y=0,
+            width=lambda obj: (obj.sprite.get_width() if obj.sprite else 1),
+            height=lambda obj: (obj.sprite.get_height() if obj.sprite else 1),
+            text="",
+        )
+
+        self.name = Label(
+            self,
+            f"{self.name}-NameLabel",
+            x=lambda obj: self.icon.rect.right + 5,
+            y=lambda obj: round(self.icon.rect.height / 2 - obj.rect.height / 2),
+            text="...",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+        )
+
+        self.skills_widget = WidgetsGroup(
+            self,
+            f"{self.name}-SkillsWidget",
+            x=0,
+            y=lambda obj: self.icon.rect.bottom + 5,
+            width=self.rect.width - self.padding * 2,
+        )
+        self.skills: list[BossSkill] = []
+
+    def init(self, boss: BossWidget) -> None:
+        self.skills_widget.remove(*self.skills)
+        self.skills.clear()
+
+        self.icon.sprite = boss.icon
+        self.name.text = boss.data.name
+
+        for skill in boss.data.desc:
+            self.add_skill(skill)
+
+        self.skills_widget.add(*self.skills)
+
+        self.enable()
+        self.show()
+
+    def add_skill(self, skill: dict) -> BossSkill:
+        """
+        Добавление характеристики.
+        Автоматически смещает характеристику на новую линию,
+        если нехватает места для ее отображения.
+        :param skill: Описание умения.
+        :return: Виджет характеристики.
+        """
+        if not len(self.skills):  # Если это первое умение
+            y = 0
+        else:
+            y = self.skills[-1].rect.bottom + 5
+
+        widget = BossSkill(
+            f"{self.name}-{len(self.skills)}-SkillWidget",
+            y,
+            self.skills_widget.rect.width,
+            skill,
+            len(self.skills) + 1,
+        )
+        self.skills.append(widget)  # Добавляем в список
+        return widget
+
+
 class ShopMenu(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
         """
@@ -1095,6 +1389,9 @@ class GameClientScreen(Group):
         self.players_menu = PlayersMenu(self)
         self.shop = ShopMenu(self)
 
+        self.enemy_menu = EnemyMenu(self)
+        self.boss_menu = BossMenu(self)
+
         self.esc_menu = EscMenu(self)
         self.info_alert = InfoAlert(
             self,
@@ -1162,3 +1459,21 @@ class GameClientScreen(Group):
                             self.shop.item_desc.item_index,
                             fail_callback=lambda msg: self.info_alert.show_message(msg),
                         )
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == pg.BUTTON_LEFT:
+                    if self.field.boss is not ...:
+                        if self.field.get_global_rect_of(
+                            self.field.boss.rect
+                        ).collidepoint(event.pos):
+                            self.enemy_menu.disable()
+                            self.enemy_menu.hide()
+                            self.boss_menu.init(self.field.boss)
+                            return
+                    for enemy in self.field.enemies.values():
+                        if self.field.get_global_rect_of(enemy.rect).collidepoint(
+                            event.pos
+                        ):
+                            self.boss_menu.disable()
+                            self.boss_menu.hide()
+                            self.enemy_menu.init(enemy)
+                            return
