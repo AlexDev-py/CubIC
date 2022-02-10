@@ -148,7 +148,11 @@ class PlayerWidget(WidgetsGroup):
             f"{self.name}-StatusLabel",
             x=self.icon.rect.w + 10,
             y=round(self.rect.height / 2 + 2),
-            text="Лидер" if player.is_owner else "Не готов...",
+            text=(
+                "Лидер"
+                if player.is_owner
+                else ("Готов" if player.ready else "Не готов...")
+            ),
             color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
@@ -205,7 +209,17 @@ class Buttons(WidgetsGroup):
             f"{self.name}-ReadyButton",
             x=self.leave_lobby_button.rect.w + 10,
             y=0,
-            text="Начать игру" if is_owner else "Готов",
+            text=(
+                "Начать игру"
+                if is_owner
+                else (
+                    "Готов"
+                    if not parent.network_client.room.get_by_uid(
+                        parent.network_client.user.uid
+                    ).ready
+                    else "Не готов..."
+                )
+            ),
             padding=3,
             color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
