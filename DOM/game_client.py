@@ -975,6 +975,8 @@ class PlayersMenu(WidgetsGroup):
             padding=5,
         )
 
+        # TODO: При 4х+ игроках виджеты могут выходить за рамку
+        #  или накладываться на виджет босса.
         self.players: list[PlayerWidget] = []  # Список игроков
 
         self.update_players()
