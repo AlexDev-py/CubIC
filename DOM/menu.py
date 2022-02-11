@@ -105,10 +105,8 @@ class MenuScreen(Group):
         )
 
         # Если выставлено максимально возможное разрешение, открываем окно в полный экран
-        if resolution >= (
-            max_resolution := Resolution.converter(os.environ["MAX_RESOLUTION"])
-        ):
-            self.screen = pg.display.set_mode(max_resolution, pg.FULLSCREEN)
+        if resolution >= Resolution.converter(os.environ["MAX_RESOLUTION"]):
+            self.screen = pg.display.set_mode(resolution, pg.FULLSCREEN)
         else:
             self.screen = pg.display.set_mode(resolution)
 

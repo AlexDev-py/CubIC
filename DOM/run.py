@@ -8,7 +8,7 @@
 import argparse
 import os
 
-import pygame
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -55,16 +55,14 @@ os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
 # Сервер
-os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
-# os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
+# os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
+os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
 
+pygame = __import__("pygame")
 pygame.init()
 
 info = pygame.display.Info()
 # Разрешение монитора
-# TODO: Нужно запретить ставить разрешение больше чем максимально возможное
-# TODO: Нужно сделать динамическую генерацию возможных разрешений,
-#  в зависимости от разрешения монитора
 # TODO: Сделать экран загрузки перехода из меню клиента в игровой клиент
 os.environ["MAX_RESOLUTION"] = f"{info.current_w};{info.current_h}"
 
