@@ -3,10 +3,12 @@ from __future__ import annotations
 import math
 import random
 import typing as ty
+from dataclasses import dataclass
 from inspect import isfunction
 
 import pygame as pg
 
+from base.events import BaseEvent
 from base.group import Group
 from base.widget import BaseWidget
 from utils import load_image
@@ -15,6 +17,15 @@ if ty.TYPE_CHECKING:
     from base.types import CordFunction
 
     SpeedFunction = ty.Callable[[Dice], float]  # noqa
+
+
+@dataclass(eq=False)
+class DiceMovingStop(BaseEvent):
+    """
+    Событие остановки вращения кости.
+    """
+
+    obj: Dice
 
 
 class Dice(BaseWidget):
@@ -76,6 +87,8 @@ class Dice(BaseWidget):
         self.visible_corners = [self.all_corners[0].copy()]
         self.image = self._render()
 
+        self.in_move = False
+
         super(Dice, self).__init__(parent, name)
 
     def _re_corners(self) -> None:
@@ -92,21 +105,6 @@ class Dice(BaseWidget):
             [ul.copy(), ul.copy(), ur.copy(), ur.copy()],
             [dl.copy(), dl.copy(), dr.copy(), dr.copy()],
         ]
-
-    def handle_event(self, event: pg.event.Event) -> None:
-        if self.enabled:
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_LEFT and not (any(self.rotations_triggers)):
-                    self.move_left()
-                if event.key == pg.K_RIGHT and not (any(self.rotations_triggers)):
-                    self.move_right()
-                if event.key == pg.K_UP and not (any(self.rotations_triggers)):
-                    self.move_up()
-                if event.key == pg.K_DOWN and not (any(self.rotations_triggers)):
-                    self.move_down()
-
-                if event.key == pg.K_SPACE:
-                    self.random_moving(10)
 
     def move_left(self) -> None:
         self.visible_corners.append(self.all_corners[2].copy())
@@ -247,8 +245,14 @@ class Dice(BaseWidget):
             self.next_moving()
 
         if any(self.rotations_triggers):
+            self.in_move = True
             super(Dice, self).update()
             return True
+
+        if not len(self.move_stack):
+            if self.in_move:
+                self.in_move = False
+                DiceMovingStop(self).post()
 
     def random_moving(self, x) -> None:
         stacks = [
@@ -273,6 +277,20 @@ class Dice(BaseWidget):
 
             last = random.choice(indexes)
             self.move_stack.append(stacks[last])
+
+    def move_from_list(self, data: list[int]) -> None:
+        """
+        Вращение кости по данным с сервера.
+        :param data: Список команд.
+        """
+        stacks = [
+            [True, False, False, False],
+            [False, True, False, False],
+            [False, False, True, False],
+            [False, False, False, True],
+        ]
+
+        self.move_stack = [stacks[i] for i in data]
 
     def next_moving(self) -> None:
         current = self.move_stack.pop(0)

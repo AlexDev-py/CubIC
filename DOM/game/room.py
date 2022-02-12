@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as ty
+from dataclasses import dataclass
 
 from .boss import Boss
 from .enemy import Enemy
@@ -9,6 +10,12 @@ from .player import Player
 
 if ty.TYPE_CHECKING:
     from ..network import User
+
+
+@dataclass
+class Move:
+    num: int  # Число, выпавшее на кости
+    movement: list[int]  # Движение кости
 
 
 class Room:
@@ -20,6 +27,9 @@ class Room:
         self.players: list[Player] = []
         self.boss: Boss = ...
         self.enemies: list[Enemy] = []
+
+        self.queue: str = ""
+        self.move_data: Move = ...
 
         self.field: list[list[True | False]] = ...
         self.location_name: str = ...
@@ -54,6 +64,7 @@ class Room:
         players: list[dict],
         boss: dict,
         enemies: list[dict],
+        queue: str,
     ) -> None:
         self.lvl = lvl
         self.field = field
@@ -63,3 +74,4 @@ class Room:
         self.players = [Player(**player) for player in players]
         self.boss = Boss(**boss)
         self.enemies = [Enemy(**enemy) for enemy in enemies]
+        self.queue = queue

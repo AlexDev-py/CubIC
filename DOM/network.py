@@ -16,6 +16,7 @@ import socketio  # noqa
 from loguru import logger
 
 from game import Room, Player
+from game.room import Move
 
 
 class UserStatus(ty.NamedTuple):
@@ -60,6 +61,7 @@ class NetworkClient:
         """
         logger.debug(f"Подключение к серверу: {os.environ['HOST']}")
         self.__class__.sio.connect(os.environ["HOST"], wait_timeout=10)
+        self.connect_handlers()
         atexit.register(self.disconnect)
 
     # ===== LOGIN =====
@@ -445,6 +447,64 @@ class NetworkClient:
             ),
         )
 
+    # === MOVE ===
+
+    def move(self, y: int, x: int, fail_callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on("move", lambda response: fail_callback(response.get("msg", "Err")))
+        self.sio.emit("move", dict(room_id=self.room.room_id, y=y, x=x))
+
+    def on_movement_player(self, callback: ty.Callable[[Player], ...]) -> None:
+        self.__dict__["on_movement_player_callback"] = callback
+
+    def _on_movement(self, response: dict[str, ...]) -> None:
+        if response.get("obj") == "p":
+            player = Player(**response["player"])
+            logger.opt(colors=True).info(
+                f"<y>{player.username}</y> move "
+                f"<c>{player.character.pos}</c> -> <c>{response['pos']}</c>"
+            )
+            self.room.update_player(player)
+            if callback := self.__dict__.get("on_movement_player_callback"):
+                callback(player)
+
+    # === QUEUE ===
+
+    def pass_move(self) -> None:
+        self.sio.emit("pass move", dict(room_id=self.room.room_id))
+
+    def on_set_queue(self, callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on(
+            "set queue",
+            lambda response: (
+                logger.opt(colors=True).info(f"Ход передан <y>{response['queue']}</y>"),
+                self.room.__setattr__("queue", response["queue"]),
+                callback(response["queue"]),
+            ),
+        )
+
+    # === ROLL THE DICE ===
+
+    def roll_the_dice(self, fail_callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on(
+            "roll the dice", lambda response: fail_callback(response.get("msg"))
+        )
+        self.sio.emit("roll the dice", dict(room_id=self.room.room_id))
+
+    def on_rolling_the_dice(self, callback: ty.Callable[[list[int]], ...]) -> None:
+        self.sio.on(
+            "rolling the dice",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{response['uid']}</y> кинул кость: "
+                    f"<c>{response['movement']}</c> -> <c>{response['result']}</c>"
+                ),
+                self.room.__setattr__(
+                    "move_data", Move(response["result"], response["movement"])
+                ),
+                callback(self.room.move_data.movement),
+            ),
+        )
+
     # ===== TOOLS =====
 
     def disconnect(self) -> None:
@@ -484,3 +544,6 @@ class NetworkClient:
             f"{os.environ['HOST']}/{namespace}?"
             + "&".join(f"{k}={v}" for k, v in kwargs.items())
         ).json()
+
+    def connect_handlers(self) -> None:
+        self.sio.on("movement", lambda response: self._on_movement(response))
