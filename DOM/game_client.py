@@ -862,14 +862,14 @@ class ItemDescription(WidgetsGroup):
 # ==== PLAYERS ====
 
 
-class PlayerWidget(WidgetsGroup):
-    def __init__(self, parent: PlayersMenu, player: Player, index: int = 0):
+class ShortPlayerWidget(WidgetsGroup):
+    def __init__(self, parent: PlayersMenu, player: Player, y: int):
         """
         Виджет игрока.
         Объединяет информацию об игроке, его предметы и характеристики.
         :param parent: ...
         :param player: Экземпляр игрока.
-        :param index: Индекс(для определения координаты Y).
+        :param y: ...
         """
         font_size = int(os.environ["font_size"])
         icon_size = int(os.environ["icon_size"])
@@ -879,8 +879,7 @@ class PlayerWidget(WidgetsGroup):
         self.network_client = parent.network_client
 
         # Определяем положение виджета
-        y = 0 if index == 0 else parent.players[index - 1].get_global_rect().bottom + 10
-        super(PlayerWidget, self).__init__(
+        super(ShortPlayerWidget, self).__init__(
             None,
             f"{player.username}-Widget",
             x=0,
@@ -913,27 +912,101 @@ class PlayerWidget(WidgetsGroup):
             font=pg.font.Font(font, font_size),
         )
 
+
+class PlayerWidget(WidgetsGroup):
+    def __init__(
+        self,
+        parent: Group,
+        network_client: NetworkClient,
+        width: int,
+        y: int | CordFunction,
+        player: Player | None = None,
+        can_remove_items: True | False = False,
+    ):
+        """
+        Виджет игрока.
+        Объединяет информацию об игроке, его предметы и характеристики.
+        :param parent: ...
+        :param network_client: ...
+        :param width: Ширина виджета.
+        :param y: Координата Y.
+        :param player: Экземпляр игрока.
+        """
+        font_size = int(os.environ["font_size"])
+        icon_size = int(os.environ["icon_size"])
+        font = os.environ.get("font")
+
+        self.player = player
+        self.network_client = network_client
+
+        # Определяем положение виджета
+        super(PlayerWidget, self).__init__(
+            parent,
+            f"Player-Widget",
+            x=0,
+            y=y,
+            width=width,
+        )
+
+        self.icon = Label(
+            self,
+            f"{self.name}-IconLabel",
+            x=0,
+            y=0,
+            width=icon_size,
+            height=icon_size,
+            text="",
+        )
+
+        self.username = Label(
+            self,
+            f"{self.name}-UsernameLabel",
+            x=lambda obj: self.icon.rect.right + 5,
+            y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
+            text="",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+        )
+
         self.line = Line(
             self,
             x=0,
-            y=self.icon.rect.bottom + 5,
+            y=lambda obj: self.icon.rect.bottom + 5,
             width=self.rect.width,
             height=2,
             color=pg.Color("red"),
         )  # Линия - разделитель
 
-        self.items = ItemsWidget(self)
-        self.stats = StatsWidget(self)
-        self.drop_menu: ItemDropMenu = ...
+        self.items: ItemsWidget = ...
+        self.stats: StatsWidget = ...
+        self.drop_menu: ItemDropMenu = ItemDropMenu(self, can_remove=can_remove_items)
+
+        if player:
+            self.update_data(player)
 
     def update_data(self, player: Player) -> None:
         """
         Обновляет данные об игроке.
         :param player: Новый экземпляр игрока.
         """
+        icon_size = int(os.environ["icon_size"])
+
         self.player = player
-        self.items.update_items(self.player)
-        self.stats.update_stats(self.player)
+        self.name = f"{player.username}-Widget"
+        self.icon.sprite = load_image(
+            player.character.icon,
+            namespace=os.environ["CHARACTERS_PATH"],
+            size=(None, icon_size),
+            save_ratio=True,
+        )
+        self.username.text = player.username
+
+        if self.items is ...:
+            self.items = ItemsWidget(self)
+            self.stats = StatsWidget(self)
+        else:
+            self.items.update_items(self.player)
+            self.stats.update_stats(self.player)
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(PlayerWidget, self).handle_event(event)
@@ -977,9 +1050,15 @@ class PlayersMenu(WidgetsGroup):
             padding=5,
         )
 
-        # TODO: При 4х+ игроках виджеты могут выходить за рамку
-        #  или накладываться на виджет босса.
-        self.players: list[PlayerWidget] = []  # Список игроков
+        self.client_player = PlayerWidget(
+            self,
+            parent.network_client,
+            width=self.width - self.padding * 2,
+            y=0,
+            player=self.network_client.room.get_by_uid(self.network_client.user.uid),
+            can_remove_items=True,
+        )
+        self.players: list[ShortPlayerWidget] = []  # Список игроков
 
         self.update_players()
 
@@ -988,30 +1067,26 @@ class PlayersMenu(WidgetsGroup):
         Обновляет список игроков.
         """
         # Удаление старых виджетов
-        self.parent.remove(*(widget.drop_menu for widget in self.players))
         self.remove(*self.players)
 
         self.players.clear()
 
         # Создание новых виджетов
         for i, player in enumerate(self.network_client.room.players):
-            self.players.append(PlayerWidget(self, player, index=i))
+            if player.uid != self.client_player.player.uid:
+                self.players.append(
+                    ShortPlayerWidget(
+                        self,
+                        player,
+                        y=(
+                            self.players[-1].rect.bottom
+                            if len(self.players)
+                            else self.client_player.rect.bottom
+                        )
+                        + 5,
+                    )
+                )
         self.add(*self.players)
-
-        # Создание выпадающих меню
-        for widget in self.players:
-            widget.drop_menu = ItemDropMenu(
-                widget, can_remove=widget.player.uid == self.network_client.user.uid
-            )
-
-    def update_player(self, player: Player) -> None:
-        """
-        Обновление одного из игроков.
-        :param player: Экземпляр игрока.
-        """
-        # Поиск по uid
-        players = [p for p in self.players if p.player.uid == player.uid]
-        players[0].update_data(player)
 
 
 # ==== CLIENT ====
@@ -1019,7 +1094,6 @@ class PlayersMenu(WidgetsGroup):
 
 class EnemyMenu(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
-        resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
@@ -1163,7 +1237,6 @@ class BossSkill(WidgetsGroup):
 
 class BossMenu(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
-        resolution = Resolution.converter(os.environ["resolution"])
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
@@ -1446,6 +1519,12 @@ class GameClientScreen(Group):
 
         self.dices_widget = DicesWidget(self)
 
+        self.player_nemu = PlayerWidget(
+            self,
+            self.network_client,
+            width=self.players_menu.width - self.players_menu.padding * 2,
+            y=lambda obj: round(self.dices_widget.rect.top - obj.rect.height - 10),
+        )
         self.enemy_menu = EnemyMenu(self)
         self.boss_menu = BossMenu(self)
 
@@ -1466,7 +1545,7 @@ class GameClientScreen(Group):
         self.network_client.on_buying_an_item(
             callback=lambda item_index, player: (
                 self.shop.items[item_index].sales(),
-                self.players_menu.update_player(player),
+                self.update_player(player),
                 (
                     (self.shop.item_preview.hide(), self.shop.item_preview.disable())
                     if self.shop.item_desc is not ...
@@ -1476,8 +1555,19 @@ class GameClientScreen(Group):
             )
         )
         self.network_client.on_removing_an_item(
-            callback=lambda player: self.players_menu.update_player(player)
+            callback=lambda player: self.update_player(player)
         )
+
+    def update_player(self, player: Player) -> None:
+        if player.uid == self.players_menu.client_player.player.uid:
+            self.players_menu.client_player.update_data(player)
+        else:
+            for pos, character_widget in self.field.characters.items():
+                if character_widget.data.uid == player.uid:
+                    self.field.characters[pos].data = player
+            if self.player_nemu.player is not ... and not self.player_nemu.hidden:
+                if self.player_nemu.player.uid == player.uid:
+                    self.player_nemu.update_data(player)
 
     def exec(self) -> str:
         while self.running:
@@ -1524,15 +1614,31 @@ class GameClientScreen(Group):
                         if self.field.get_global_rect_of(
                             self.field.boss.rect
                         ).collidepoint(event.pos):
-                            self.enemy_menu.disable()
                             self.enemy_menu.hide()
+                            self.player_nemu.hide()
+                            self.player_nemu.disable()
                             self.boss_menu.init(self.field.boss)
                             return
                     for enemy in self.field.enemies.values():
                         if self.field.get_global_rect_of(enemy.rect).collidepoint(
                             event.pos
                         ):
-                            self.boss_menu.disable()
                             self.boss_menu.hide()
+                            self.player_nemu.hide()
+                            self.player_nemu.disable()
                             self.enemy_menu.init(enemy)
                             return
+                    for player in self.field.characters.values():
+                        if (
+                            player.data.uid
+                            != self.players_menu.client_player.player.uid
+                        ):
+                            if self.field.get_global_rect_of(player.rect).collidepoint(
+                                event.pos
+                            ):
+                                self.boss_menu.hide()
+                                self.enemy_menu.hide()
+                                self.player_nemu.update_data(player.data)
+                                self.player_nemu.show()
+                                self.player_nemu.enable()
+                                return
