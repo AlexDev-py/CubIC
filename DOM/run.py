@@ -46,6 +46,8 @@ os.environ["ITEM_STANDS_PATH"] = os.path.join(os.environ["APP_DIR"], "item_stand
 os.environ["BUTTONS_PATH"] = os.path.join(os.environ["APP_DIR"], "buttons")
 # Путь к директории с локациями
 os.environ["LOCATIONS_PATH"] = os.path.join(os.environ["APP_DIR"], "locations")
+# Путь к директории с гранями кости
+os.environ["CUBE_PATH"] = os.path.join(os.environ["APP_DIR"], "cube")
 # Шрифт
 os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
