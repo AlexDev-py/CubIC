@@ -14,6 +14,8 @@ from utils import load_image
 if ty.TYPE_CHECKING:
     from base.types import CordFunction
 
+    SpeedFunction = ty.Callable[[Dice], float]  # noqa
+
 
 class Dice(BaseWidget):
     def __init__(
@@ -21,6 +23,7 @@ class Dice(BaseWidget):
         parent: Group | None,
         name: str = None,
         *,
+        speed: int | SpeedFunction,
         x: int | CordFunction,
         y: int | CordFunction,
         width: int,
@@ -31,6 +34,7 @@ class Dice(BaseWidget):
         Реализует визуализацию вращения кости.
         :param parent: Объект к которому принадлежит виджет.
         :param name: Название объекта.
+        :param speed: Скорость вращения.
         :param x: Координата x.
         :type x: Число или функция вычисляющая координату.
         :param y: Координата y.
@@ -42,6 +46,7 @@ class Dice(BaseWidget):
         self._x = x
         self._y = y
         self._width = width
+        self._speed = speed
 
         self.facets = [
             load_image(f"{i}.png", namespace=files_namespace, size=(width, width))
@@ -55,7 +60,6 @@ class Dice(BaseWidget):
         self.rotations_triggers = [False, False, False, False]
         self.counters = [0, 0]  # Показатели поворота
 
-        self.speed = 1  # Скорость кубика
         self.graph = [
             [4, 1, 3, 2],
             [0, 5, 3, 2],
@@ -70,10 +74,11 @@ class Dice(BaseWidget):
         self.rect = self._get_rect()
         self._re_corners()
         self.visible_corners = [self.all_corners[0].copy()]
+        self.image = self._render()
 
         super(Dice, self).__init__(parent, name)
 
-    def _re_corners(self):
+    def _re_corners(self) -> None:
         ul, ur, dl, dr = (
             [0, 0],
             [self.width, 0],
@@ -91,7 +96,6 @@ class Dice(BaseWidget):
     def handle_event(self, event: pg.event.Event) -> None:
         if self.enabled:
             if event.type == pg.KEYDOWN:
-                print(self.rotations_triggers)
                 if event.key == pg.K_LEFT and not (any(self.rotations_triggers)):
                     self.move_left()
                 if event.key == pg.K_RIGHT and not (any(self.rotations_triggers)):
@@ -104,32 +108,30 @@ class Dice(BaseWidget):
                 if event.key == pg.K_SPACE:
                     self.random_moving(10)
 
-    def move_left(self):
+    def move_left(self) -> None:
         self.visible_corners.append(self.all_corners[2].copy())
         self.rotations_triggers[1] = True
         self.visible_images.append(self.graph[self.visible_images[0]][1])
 
-    def move_right(self):
+    def move_right(self) -> None:
         self.visible_corners.append(self.all_corners[1].copy())
         self.rotations_triggers[0] = True
         self.visible_images.append(self.graph[self.visible_images[0]][0])
 
-    def move_up(self):
+    def move_up(self) -> None:
         self.visible_corners.append(self.all_corners[4].copy())
         self.rotations_triggers[3] = True
         self.visible_images.append(self.graph[self.visible_images[0]][3])
 
-    def move_down(self):
+    def move_down(self) -> None:
         self.visible_corners.append(self.all_corners[3].copy())
         self.rotations_triggers[2] = True
         self.visible_images.append(self.graph[self.visible_images[0]][2])
 
-    def update(self):
+    def update(self) -> ty.Optional[True]:
         if not hasattr(self, "rotations_triggers"):
             return
 
-        if any(self.rotations_triggers):
-            print(self.rotations_triggers)
         if self.rotations_triggers[0]:
             if self.counters[0] < self.width / 2:
                 self.visible_corners[0][2][0] += (math.sqrt(2) - 1) * self.speed
@@ -157,7 +159,6 @@ class Dice(BaseWidget):
                 self.visible_images = self.visible_images[1::]
                 self.counters[0] = 0
                 self._re_corners()
-            super(Dice, self).update()
         elif self.rotations_triggers[1]:
             if self.counters[0] < self.width / 2:
                 self.visible_corners[0][0][0] -= (math.sqrt(2) - 1) * self.speed
@@ -185,7 +186,6 @@ class Dice(BaseWidget):
                 self.visible_images = self.visible_images[1::]
                 self.counters[0] = 0
                 self._re_corners()
-            super(Dice, self).update()
         elif self.rotations_triggers[2]:
             if self.counters[0] < self.width / 2:
                 self.visible_corners[0][1][1] += (math.sqrt(2) - 1) * self.speed
@@ -213,7 +213,6 @@ class Dice(BaseWidget):
                 self.visible_images = self.visible_images[1::]
                 self.counters[0] = 0
                 self._re_corners()
-            super(Dice, self).update()
         elif self.rotations_triggers[3]:
             if self.counters[0] < self.width / 2:
                 self.visible_corners[0][0][1] -= (math.sqrt(2) - 1) * self.speed
@@ -241,14 +240,17 @@ class Dice(BaseWidget):
                 self.visible_images = self.visible_images[1::]
                 self.counters[0] = 0
                 self._re_corners()
-            super(Dice, self).update()
         elif (
             self.rotations_triggers == [False, False, False, False]
             and len(self.move_stack) > 0
         ):
             self.next_moving()
 
-    def random_moving(self, x):
+        if any(self.rotations_triggers):
+            super(Dice, self).update()
+            return True
+
+    def random_moving(self, x) -> None:
         stacks = [
             [True, False, False, False],
             [False, True, False, False],
@@ -272,7 +274,7 @@ class Dice(BaseWidget):
             last = random.choice(indexes)
             self.move_stack.append(stacks[last])
 
-    def next_moving(self):
+    def next_moving(self) -> None:
         current = self.move_stack.pop(0)
         if current[0]:
             self.move_right()
@@ -301,6 +303,14 @@ class Dice(BaseWidget):
                 polygon[0],
             )
         return image
+
+    @property
+    def speed(self) -> float:
+        return self._speed(self) if isfunction(self._speed) else self._speed
+
+    @speed.setter
+    def speed(self, value: float | SpeedFunction):
+        self._speed = value
 
     @property
     def x(self) -> int:

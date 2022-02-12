@@ -14,7 +14,9 @@ import pygame as pg
 
 from base import WidgetsGroup, Group, Label, Alert, Button, Anchor, Line, Text
 from base.events import ButtonClickEvent
+from base.widget import BaseWidget
 from database.field_types import Resolution
+from dice import Dice
 from settings_alert import Settings
 from utils import load_image, FinishStatus, InfoAlert, DropMenu
 
@@ -1025,7 +1027,7 @@ class EnemyMenu(WidgetsGroup):
             parent,
             "EnemyMenu",
             x=0,
-            y=lambda obj: round(resolution.height - obj.rect.height),
+            y=lambda obj: round(parent.dices_widget.rect.top - obj.rect.height - 10),
             width=parent.field.rect.left,
             padding=10,
             hidden=True,
@@ -1169,7 +1171,7 @@ class BossMenu(WidgetsGroup):
             parent,
             "BossMenu",
             x=0,
-            y=lambda obj: round(resolution.height - obj.rect.height),
+            y=lambda obj: round(parent.dices_widget.rect.top - obj.rect.height - 10),
             width=parent.field.rect.left,
             padding=10,
             hidden=True,
@@ -1370,10 +1372,60 @@ class ShopMenu(WidgetsGroup):
                                 break
 
 
+class DicesWidget(WidgetsGroup):
+    def __init__(self, parent: GameClientScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+
+        super(DicesWidget, self).__init__(
+            parent,
+            f"{parent.name}-DicesWidget",
+            x=0,
+            y=lambda obj: resolution.height - obj.rect.height,
+            width=parent.field.rect.left,
+            padding=10,
+        )
+
+        self.dice = Dice(
+            self,
+            f"{self.name}-DefaultDice",
+            # Оборот на 90 градусов за пол секунды
+            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 2,
+            x=lambda obj: round(
+                (self.width - self.padding * 2) / 2
+                - obj.rect.width
+                - obj.rect.width / 5
+            ),
+            y=0,
+            width=round(parent.field.rect.left / 3),
+            files_namespace=os.environ["CUBE_PATH"],
+        )
+
+        self.dice2 = Dice(
+            self,
+            f"{self.name}-AttackDice",
+            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 2,
+            x=lambda obj: (self.width - self.padding * 2)
+            - obj.rect.width
+            - self.dice.rect.x,
+            y=0,
+            width=round(parent.field.rect.left / 3),
+            files_namespace=os.environ["CUBE_PATH"],
+        )
+
+    def update(self, *args, **kwargs) -> None:
+        if hasattr(self, "_objects"):
+            upd = False
+            for widget in self.objects:
+                upd = widget.update(*args, **kwargs) or upd
+            if upd:
+                BaseWidget.update(self, *args, **kwargs)
+
+
 class GameClientScreen(Group):
     def __init__(self, network_client: NetworkClient = None):
         resolution = Resolution.converter(os.environ["resolution"])
 
+        self.clock = pg.time.Clock()
         self.running = True
         self.finish_status = FinishStatus.close
 
@@ -1391,6 +1443,8 @@ class GameClientScreen(Group):
         self.field = Field(self)
         self.players_menu = PlayersMenu(self)
         self.shop = ShopMenu(self)
+
+        self.dices_widget = DicesWidget(self)
 
         self.enemy_menu = EnemyMenu(self)
         self.boss_menu = BossMenu(self)
@@ -1439,11 +1493,13 @@ class GameClientScreen(Group):
                             self.esc_menu.settings.hide()
                             self.esc_menu.hide()
                 self.handle_event(event)
+            self.dices_widget.update()
             self.render()
+            self.clock.tick()
         return self.finish_status
 
     def render(self) -> None:
-        self.screen.fill("white")
+        self.screen.fill("#f0f0f0")
         self.draw(self.screen)
 
         pg.display.flip()
