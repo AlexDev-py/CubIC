@@ -27,6 +27,116 @@ class DiceMovingStop(BaseEvent):
 
     obj: Dice
 
+    SpeedFunction = ty.Callable[[Dice], float]  # noqa
+
+
+TOP = "top"
+LEFT = "left"
+FRONT = "front"
+BACK = "back"
+RIGHT = "right"
+BOTTOM = "bottom"
+
+
+class DiceAlgorithm:
+    """
+    Симулирует бросок кости.
+    """
+
+    def __init__(self):
+        """
+        _________¶¶¶¶¶¶¶¶¶¶¶
+        ______¶¶¶¶¶_______¶¶¶¶¶
+        ___¶¶¶¶¶_____________¶¶¶¶
+        _¶¶¶¶________§§§§________¶¶¶
+        ¶¶¶___________§§§§________¶¶¶
+        ¶_¶¶¶¶¶________________¶¶¶¶_¶
+        ¶_____¶¶¶¶__________¶¶¶¶¶___¶
+        ¶_§§§§_¶¶¶¶¶____¶¶¶¶___§§§§_¶
+        ¶__§§§§____¶¶¶¶¶¶¶____§§§§__¶
+        ¶_____________¶¶____________¶
+        ¶_____________¶_____§§§§____¶
+        ¶_____________¶____§§§§_____¶
+        ¶_______§§§§__¶_____________¶
+        ¶¶¶______§ü§§_¶_§§§§______¶¶¶
+        __¶¶¶¶________¶§§§§____¶¶¶¶¶
+        ____¶¶¶¶¶_____¶_____¶¶¶¶¶
+        _______¶¶¶¶¶¶_¶_¶¶¶¶¶¶
+        __________¶¶¶¶¶¶¶¶¶
+        Изначальное положение кости:
+        Мы смотрим на единицу.
+        2 - на левой грани от единицы
+        3 - на нижней грани от единицы
+        4 - на верхней грани от единицы
+        5 - на правой грани от единицы
+        6 - на противоположной единице стороне
+        """
+        self.data = {1: TOP, 2: LEFT, 3: FRONT, 4: BACK, 5: RIGHT, 6: BOTTOM}
+
+    def move_top(self) -> None:
+        """
+        Поворот вверх от наблюдаемой стороны.
+        """
+        movement = [TOP, BACK, BOTTOM, FRONT]
+        rev = self.rev
+        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
+        self.data.update(new_data)
+
+    def move_bottom(self) -> None:
+        """
+        Поворот вниз от наблюдаемой стороны.
+        """
+        movement = [TOP, FRONT, BOTTOM, BACK]
+        rev = self.rev
+        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
+        self.data.update(new_data)
+
+    def move_left(self) -> None:
+        """
+        Поворот влево от наблюдаемой стороны.
+        """
+        movement = [TOP, LEFT, BOTTOM, RIGHT]
+        rev = self.rev
+        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
+        self.data.update(new_data)
+
+    def move_right(self) -> None:
+        """
+        Поворот вправо от наблюдаемой стороны.
+        """
+        movement = [TOP, RIGHT, BOTTOM, LEFT]
+        rev = self.rev
+        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
+        self.data.update(new_data)
+
+    @property
+    def rev(self) -> dict[str, int]:
+        return {v: k for k, v in self.data.items()}
+
+    def roll(self, k: int | None = None) -> list[list[int]]:
+        """
+        Случайный бросок.
+        """
+        _movement = [self.move_right, self.move_left, self.move_bottom, self.move_top]
+        movement = []
+        last = -1
+        for _ in range(k or random.randint(10, 25)):
+            move = [0, 1, 2, 3]
+            if last == 0:
+                move.remove(1)
+            elif last == 1:
+                move.remove(0)
+            elif last == 2:
+                move.remove(3)
+            elif last == 3:
+                move.remove(2)
+
+            last = random.choice(move)
+            _movement[last]()
+            movement.append([last, self.rev[TOP]])
+
+        return movement
+
 
 class Dice(BaseWidget):
     def __init__(
@@ -91,6 +201,15 @@ class Dice(BaseWidget):
 
         super(Dice, self).__init__(parent, name)
 
+    def _restart(self) -> None:
+        self.algorithm = DiceAlgorithm()
+        self.visible_images = [self.algorithm.rev["top"] - 1]
+        self.rotations_triggers = [False, False, False, False]
+        self._re_corners()
+        self.visible_corners = [self.all_corners[0].copy()]
+        self.counters = [0, 0]
+        self.move_stack.clear()
+
     def _re_corners(self) -> None:
         ul, ur, dl, dr = (
             [0, 0],
@@ -109,22 +228,18 @@ class Dice(BaseWidget):
     def move_left(self) -> None:
         self.visible_corners.append(self.all_corners[2].copy())
         self.rotations_triggers[1] = True
-        self.visible_images.append(self.graph[self.visible_images[0]][1])
 
     def move_right(self) -> None:
         self.visible_corners.append(self.all_corners[1].copy())
         self.rotations_triggers[0] = True
-        self.visible_images.append(self.graph[self.visible_images[0]][0])
 
     def move_up(self) -> None:
         self.visible_corners.append(self.all_corners[4].copy())
         self.rotations_triggers[3] = True
-        self.visible_images.append(self.graph[self.visible_images[0]][3])
 
     def move_down(self) -> None:
         self.visible_corners.append(self.all_corners[3].copy())
         self.rotations_triggers[2] = True
-        self.visible_images.append(self.graph[self.visible_images[0]][2])
 
     def update(self) -> ty.Optional[True]:
         if not hasattr(self, "rotations_triggers"):
@@ -294,6 +409,8 @@ class Dice(BaseWidget):
 
     def next_moving(self) -> None:
         current = self.move_stack.pop(0)
+        self.visible_images.append(current[-1] - 1)
+        current = current[0]
         if current[0]:
             self.move_right()
         if current[1]:
