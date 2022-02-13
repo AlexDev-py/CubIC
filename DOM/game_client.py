@@ -1593,8 +1593,9 @@ class GameClientScreen(Group):
 
         self.network_client.on_leaving_the_lobby(
             callback=lambda msg: (
-                self.players_menu.update_players(),
                 self.info_alert.show_message(msg),
+                self.players_menu.update_players(),
+                self.field.update_field(),
             )
         )
         self.network_client.on_buying_an_item(
@@ -1714,6 +1715,12 @@ class GameClientScreen(Group):
                         )
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == pg.BUTTON_LEFT:
+                    for pos, rect in self.field.ways.items():
+                        if self.field.get_global_rect_of(rect).collidepoint(event.pos):
+                            self.network_client.move(
+                                *pos, fail_callback=self.info_alert.show_message
+                            )
+
                     if self.field.boss is not ...:
                         if self.field.get_global_rect_of(
                             self.field.boss.rect
@@ -1758,9 +1765,3 @@ class GameClientScreen(Group):
                                 self.network_client.roll_the_dice(
                                     self.info_alert.show_message
                                 )
-
-                    for pos, rect in self.field.ways.items():
-                        if self.field.get_global_rect_of(rect).collidepoint(event.pos):
-                            self.network_client.move(
-                                *pos, fail_callback=self.info_alert.show_message
-                            )
