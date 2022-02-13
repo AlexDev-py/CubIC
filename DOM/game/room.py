@@ -15,7 +15,7 @@ if ty.TYPE_CHECKING:
 @dataclass
 class Move:
     num: int  # Число, выпавшее на кости
-    movement: list[int]  # Движение кости
+    movement: list[tuple[int, int]]  # Движение кости
 
 
 class Room:

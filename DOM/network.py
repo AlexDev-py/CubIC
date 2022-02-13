@@ -490,7 +490,9 @@ class NetworkClient:
         )
         self.sio.emit("roll the dice", dict(room_id=self.room.room_id))
 
-    def on_rolling_the_dice(self, callback: ty.Callable[[list[int]], ...]) -> None:
+    def on_rolling_the_dice(
+        self, callback: ty.Callable[[list[tuple[int, int]]], ...]
+    ) -> None:
         self.sio.on(
             "rolling the dice",
             lambda response: (

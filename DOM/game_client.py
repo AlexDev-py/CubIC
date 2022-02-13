@@ -1614,7 +1614,10 @@ class GameClientScreen(Group):
         )
 
         self.network_client.on_movement_player(
-            callback=lambda player: self.field.update_field()
+            callback=lambda player: (
+                self.field.ways.clear(),
+                self.field.update_field(),
+            )
         )
 
         self.network_client.on_rolling_the_dice(callback=self.rolling_the_dice)
@@ -1639,8 +1642,6 @@ class GameClientScreen(Group):
                 self.pass_move_button.enable()
                 self.dices_widget.enable()
             else:
-                self.field.ways.clear()
-                self.field.update_field()
                 self.pass_move_button.hide()
                 self.pass_move_button.disable()
                 self.dices_widget.disable()
@@ -1653,7 +1654,7 @@ class GameClientScreen(Group):
                 if widget.username.color != color:
                     widget.username.color = color
 
-    def rolling_the_dice(self, movement: list[int]):
+    def rolling_the_dice(self, movement: list[tuple[int, int]]):
         self.dices_widget.dice.move_from_list(movement)
 
     def exec(self) -> str:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import random
 import typing as ty
 from dataclasses import dataclass
 from inspect import isfunction
@@ -27,8 +26,6 @@ class DiceMovingStop(BaseEvent):
 
     obj: Dice
 
-    SpeedFunction = ty.Callable[[Dice], float]  # noqa
-
 
 TOP = "top"
 LEFT = "left"
@@ -38,113 +35,13 @@ RIGHT = "right"
 BOTTOM = "bottom"
 
 
-class DiceAlgorithm:
-    """
-    Симулирует бросок кости.
-    """
-
-    def __init__(self):
-        """
-        _________¶¶¶¶¶¶¶¶¶¶¶
-        ______¶¶¶¶¶_______¶¶¶¶¶
-        ___¶¶¶¶¶_____________¶¶¶¶
-        _¶¶¶¶________§§§§________¶¶¶
-        ¶¶¶___________§§§§________¶¶¶
-        ¶_¶¶¶¶¶________________¶¶¶¶_¶
-        ¶_____¶¶¶¶__________¶¶¶¶¶___¶
-        ¶_§§§§_¶¶¶¶¶____¶¶¶¶___§§§§_¶
-        ¶__§§§§____¶¶¶¶¶¶¶____§§§§__¶
-        ¶_____________¶¶____________¶
-        ¶_____________¶_____§§§§____¶
-        ¶_____________¶____§§§§_____¶
-        ¶_______§§§§__¶_____________¶
-        ¶¶¶______§ü§§_¶_§§§§______¶¶¶
-        __¶¶¶¶________¶§§§§____¶¶¶¶¶
-        ____¶¶¶¶¶_____¶_____¶¶¶¶¶
-        _______¶¶¶¶¶¶_¶_¶¶¶¶¶¶
-        __________¶¶¶¶¶¶¶¶¶
-        Изначальное положение кости:
-        Мы смотрим на единицу.
-        2 - на левой грани от единицы
-        3 - на нижней грани от единицы
-        4 - на верхней грани от единицы
-        5 - на правой грани от единицы
-        6 - на противоположной единице стороне
-        """
-        self.data = {1: TOP, 2: LEFT, 3: FRONT, 4: BACK, 5: RIGHT, 6: BOTTOM}
-
-    def move_top(self) -> None:
-        """
-        Поворот вверх от наблюдаемой стороны.
-        """
-        movement = [TOP, BACK, BOTTOM, FRONT]
-        rev = self.rev
-        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
-        self.data.update(new_data)
-
-    def move_bottom(self) -> None:
-        """
-        Поворот вниз от наблюдаемой стороны.
-        """
-        movement = [TOP, FRONT, BOTTOM, BACK]
-        rev = self.rev
-        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
-        self.data.update(new_data)
-
-    def move_left(self) -> None:
-        """
-        Поворот влево от наблюдаемой стороны.
-        """
-        movement = [TOP, LEFT, BOTTOM, RIGHT]
-        rev = self.rev
-        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
-        self.data.update(new_data)
-
-    def move_right(self) -> None:
-        """
-        Поворот вправо от наблюдаемой стороны.
-        """
-        movement = [TOP, RIGHT, BOTTOM, LEFT]
-        rev = self.rev
-        new_data = {rev[movement[i]]: movement[(i + 1) % 4] for i in range(4)}
-        self.data.update(new_data)
-
-    @property
-    def rev(self) -> dict[str, int]:
-        return {v: k for k, v in self.data.items()}
-
-    def roll(self, k: int | None = None) -> list[list[int]]:
-        """
-        Случайный бросок.
-        """
-        _movement = [self.move_right, self.move_left, self.move_bottom, self.move_top]
-        movement = []
-        last = -1
-        for _ in range(k or random.randint(10, 25)):
-            move = [0, 1, 2, 3]
-            if last == 0:
-                move.remove(1)
-            elif last == 1:
-                move.remove(0)
-            elif last == 2:
-                move.remove(3)
-            elif last == 3:
-                move.remove(2)
-
-            last = random.choice(move)
-            _movement[last]()
-            movement.append([last, self.rev[TOP]])
-
-        return movement
-
-
 class Dice(BaseWidget):
     def __init__(
         self,
         parent: Group | None,
         name: str = None,
         *,
-        speed: int | SpeedFunction,
+        speed: float | SpeedFunction,
         x: int | CordFunction,
         y: int | CordFunction,
         width: int,
@@ -171,7 +68,7 @@ class Dice(BaseWidget):
 
         self.facets = [
             load_image(f"{i}.png", namespace=files_namespace, size=(width, width))
-            for i in range(1, 6 + 1)
+            for i in [1, 2, 3, 3, 2, 4]
         ]  # Изображения граней
         # Триггер движения
         # [True, False, False, False] - right move
@@ -202,8 +99,7 @@ class Dice(BaseWidget):
         super(Dice, self).__init__(parent, name)
 
     def _restart(self) -> None:
-        self.algorithm = DiceAlgorithm()
-        self.visible_images = [self.algorithm.rev["top"] - 1]
+        self.visible_images = [0]
         self.rotations_triggers = [False, False, False, False]
         self._re_corners()
         self.visible_corners = [self.all_corners[0].copy()]
@@ -369,35 +265,28 @@ class Dice(BaseWidget):
                 self.in_move = False
                 DiceMovingStop(self).post()
 
-    def random_moving(self, x) -> None:
-        stacks = [
-            [True, False, False, False],
-            [False, True, False, False],
-            [False, False, True, False],
-            [False, False, False, True],
-        ]
-        last = -1
-        self.move_stack.clear()
+    def random_moving(self, k: int | None = None) -> None:
+        moving = self.algorithm.roll(k)
+        print(moving)
+        for i in moving:
+            self.move_stack.append(
+                [
+                    [
+                        [True, False, False, False],
+                        [False, True, False, False],
+                        [False, False, True, False],
+                        [False, False, False, True],
+                    ][i[0]],
+                    i[1],
+                ]
+            )
 
-        for x in range(x):
-            indexes = [0, 1, 2, 3]
-            if last == 0:
-                indexes.remove(1)
-            elif last == 1:
-                indexes.remove(0)
-            elif last == 2:
-                indexes.remove(3)
-            elif last == 3:
-                indexes.remove(2)
-
-            last = random.choice(indexes)
-            self.move_stack.append(stacks[last])
-
-    def move_from_list(self, data: list[int]) -> None:
+    def move_from_list(self, data: list[tuple[int, int]]) -> None:
         """
         Вращение кости по данным с сервера.
         :param data: Список команд.
         """
+        self._restart()
         stacks = [
             [True, False, False, False],
             [False, True, False, False],
@@ -405,7 +294,7 @@ class Dice(BaseWidget):
             [False, False, False, True],
         ]
 
-        self.move_stack = [stacks[i] for i in data]
+        self.move_stack = [[stacks[i[0]], i[1]] for i in data]
 
     def next_moving(self) -> None:
         current = self.move_stack.pop(0)
