@@ -14,6 +14,7 @@ if ty.TYPE_CHECKING:
 
 @dataclass
 class Move:
+    uid: int
     num: int  # Число, выпавшее на кости
     movement: list[tuple[int, int]]  # Движение кости
 
@@ -51,8 +52,20 @@ class Room:
         if players := [player for player in self.players if player.uid == uid]:
             return players[0]
 
-    def update_player(self, player: Player) -> None:
-        self.players[self.players.index(self.get_by_uid(player.uid))] = player
+    def get_by_eid(self, eid: int) -> Enemy | None:
+        if enemies := [enemy for enemy in self.enemies if enemy.eid == eid]:
+            return enemies[0]
+
+    def update_player(self, player: dict) -> None:
+        self.players[self.players.index(self.get_by_uid(player["uid"]))].update(player)
+
+    def update_enemies(self, enemies: list[dict]) -> None:
+        self.enemies = [Enemy(**enemy) for enemy in enemies]
+
+    def update_enemy(self, enemy: dict) -> None:
+        self.enemies[self.enemies.index(self.get_by_eid(enemy["eid"]))].__dict__.update(
+            enemy
+        )
 
     def init_lvl(
         self,

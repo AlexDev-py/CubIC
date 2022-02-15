@@ -38,6 +38,11 @@ class Player:
         self.character_id = character_id
         self.character = characters[character_id]
 
+    def update(self, data: dict) -> None:
+        character = data.pop("character")
+        self.__dict__.update(data)
+        self.character.update(character)
+
     @classmethod
     def from_user(cls, user: User, is_owner: True | False = False) -> Player:
         return cls(user.uid, user.username, user.icon, is_owner=is_owner)

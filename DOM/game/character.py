@@ -25,6 +25,13 @@ class Character:
     items: list[Item | None] = field(default_factory=list)
     pos: tuple[int, int] = (0, 0)
 
+    def update(self, data: dict) -> None:
+        items = data.pop("items")
+        self.__dict__.update(data)
+        self.items = [
+            Item(**item) if isinstance(item, dict) else None for item in items
+        ]
+
     def __post_init__(self):
         self.items = [
             Item(**item) if isinstance(item, dict) else None for item in self.items

@@ -925,7 +925,6 @@ class ShortPlayerWidget(WidgetsGroup):
                 save_ratio=True,
             ),
         )
-
         self.username = Label(
             self,
             f"{self.name}-UsernameLabel",
@@ -1028,11 +1027,13 @@ class PlayerWidget(WidgetsGroup):
             save_ratio=True,
         )
         self.username.text = player.username
-        self.username.color = (
-            pg.Color("#20478a")
-            if f"p{player.uid}" == self.network_client.room.queue
-            else pg.Color("red")
-        )
+        if self.username.color == pg.Color("#fcba03"):
+            color = pg.Color("#fcba03")
+        elif f"p{player.uid}" == self.network_client.room.queue:
+            color = pg.Color("#20478a")
+        else:
+            color = pg.Color("red")
+        self.username.color = color
 
         if self.items is ...:
             self.items = ItemsWidget(self)
@@ -1494,8 +1495,8 @@ class DicesWidget(WidgetsGroup):
         self.dice = Dice(
             self,
             f"{self.name}-DefaultDice",
-            # Оборот на 90 градусов за пол секунды
-            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 2,
+            # Оборот на 180 градусов за пол секунды
+            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 4,
             x=lambda obj: round(
                 (self.width - self.padding * 2) / 2
                 - obj.rect.width
@@ -1509,7 +1510,7 @@ class DicesWidget(WidgetsGroup):
         self.dice2 = Dice(
             self,
             f"{self.name}-AttackDice",
-            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 2,
+            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 4,
             x=lambda obj: (self.width - self.padding * 2)
             - obj.rect.width
             - self.dice.rect.x,
@@ -1621,7 +1622,14 @@ class GameClientScreen(Group):
             )
         )
 
+        self.network_client.on_movement_enemy(callback=self.field.update_field)
+
+        self.network_client.on_fight(callback=self.on_fight)
+
         self.network_client.on_rolling_the_dice(callback=self.rolling_the_dice)
+        self.network_client.on_rolling_the_fight_dice(
+            callback=self.rolling_the_fight_dice
+        )
         self.network_client.on_set_queue(callback=self.on_set_queue)
 
     def update_player(self, player: Player) -> None:
@@ -1631,7 +1639,7 @@ class GameClientScreen(Group):
             for pos, character_widget in self.field.characters.items():
                 if character_widget.data.uid == player.uid:
                     self.field.characters[pos].data = player
-            if self.player_nemu.player is not ... and not self.player_nemu.hidden:
+            if self.player_nemu.player is not None and not self.player_nemu.hidden:
                 if self.player_nemu.player.uid == player.uid:
                     self.player_nemu.update_data(player)
 
@@ -1641,22 +1649,35 @@ class GameClientScreen(Group):
             if uid == self.players_menu.client_player.player.uid:
                 self.pass_move_button.show()
                 self.pass_move_button.enable()
-                self.dices_widget.enable()
             else:
                 self.pass_move_button.hide()
                 self.pass_move_button.disable()
-                self.dices_widget.disable()
 
-            self.update_player(self.players_menu.client_player.player)
-            for widget in self.players_menu.players:
+            for widget in [*self.players_menu.players, self.players_menu.client_player]:
                 color = (
                     pg.Color("#20478a") if widget.player.uid == uid else pg.Color("red")
                 )
                 if widget.username.color != color:
                     widget.username.color = color
 
+    def on_fight(self, uid: int) -> None:
+        if uid == self.players_menu.client_player.player.uid:
+            self.pass_move_button.show()
+            self.pass_move_button.enable()
+        else:
+            self.pass_move_button.hide()
+            self.pass_move_button.disable()
+
+        for widget in [*self.players_menu.players, self.players_menu.client_player]:
+            color = pg.Color("#fcba03") if widget.player.uid == uid else pg.Color("red")
+            if widget.username.color != color:
+                widget.username.color = color
+
     def rolling_the_dice(self, movement: list[tuple[int, int]]):
         self.dices_widget.dice.move_from_list(movement)
+
+    def rolling_the_fight_dice(self, movement: list[tuple[int, int]]):
+        self.dices_widget.dice2.move_from_list(movement)
 
     def exec(self) -> str:
         while self.running:
@@ -1668,9 +1689,6 @@ class GameClientScreen(Group):
                         # Обработка открытия / закрытия меню
                         if self.esc_menu.parent.hidden:
                             self.esc_menu.show()
-                        else:
-                            self.esc_menu.settings.hide()
-                            self.esc_menu.hide()
                 self.handle_event(event)
             self.dices_widget.update()
             self.render()
@@ -1699,12 +1717,15 @@ class GameClientScreen(Group):
                         )
             elif event.type == DiceMovingStop.type:
                 if event.obj == self.dices_widget.dice:
-                    self.dices_widget.enable()
-                    self.pass_move_button.enable()
                     player = self.network_client.room.get_by_uid(
                         self.network_client.user.uid
                     )
-                    if self.network_client.room.queue == f"p{player.uid}":
+                    if (
+                        self.network_client.room.move_data.uid
+                        == self.network_client.user.uid
+                    ):
+                        if not self.pass_move_button.hidden:
+                            self.pass_move_button.enable()
                         self.field.init_ways(
                             get_ways(
                                 player.character.pos,
@@ -1713,6 +1734,12 @@ class GameClientScreen(Group):
                                 self.network_client.room.field,
                             )
                         )
+                elif event.obj == self.dices_widget.dice2:
+                    if not self.pass_move_button.hidden:
+                        self.pass_move_button.enable()
+                    self.field.update_field()
+                    for player in self.network_client.room.players:
+                        self.update_player(player)
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == pg.BUTTON_LEFT:
                     for pos, rect in self.field.ways.items():
@@ -1754,14 +1781,21 @@ class GameClientScreen(Group):
                                 self.player_nemu.enable()
                                 return
 
-                    if (
-                        self.network_client.room.queue
-                        == f"p{self.network_client.user.uid}"
+                    if self.dices_widget.dice.get_global_rect().collidepoint(event.pos):
+                        self.pass_move_button.disable()
+                        self.network_client.roll_the_dice(
+                            lambda msg: (
+                                self.info_alert.show_message(msg),
+                                self.pass_move_button.enable(),
+                            )
+                        )
+                    if self.dices_widget.dice2.get_global_rect().collidepoint(
+                        event.pos
                     ):
-                        if self.dices_widget.get_global_rect().collidepoint(event.pos):
-                            if self.dices_widget.dice.enabled:
-                                self.dices_widget.disable()
-                                self.pass_move_button.disable()
-                                self.network_client.roll_the_dice(
-                                    self.info_alert.show_message
-                                )
+                        self.pass_move_button.disable()
+                        self.network_client.roll_the_fight_dice(
+                            lambda msg: (
+                                self.info_alert.show_message(msg),
+                                self.pass_move_button.enable(),
+                            )
+                        )
