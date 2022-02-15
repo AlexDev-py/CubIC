@@ -43,7 +43,7 @@ def formatter(record) -> str:
     )
 
 
-logging_level = "DEBUG"
+logging_level = os.environ.get("LOGGING_LEVEL", "DEBUG")
 level_handler = LoggingLevel(logging_level)
 
 console_logger_handler = logger.add(

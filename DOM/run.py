@@ -17,6 +17,13 @@ parser.add_argument(
     type=str,
     help="Путь к директории с файлами игры",
 )
+parser.add_argument(
+    "--ll",
+    default="TRACE",
+    type=str,
+    choices=["TRACE", "DEBUG", "INFO"],
+    help="Уровень логирования",
+)
 args = parser.parse_args()
 
 # CONFIG SETUP
@@ -56,6 +63,8 @@ os.environ["CUBE_PATH"] = os.path.join(os.environ["APP_DIR"], "cube")
 os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
 os.environ["VERSION"] = "0.0.0"
+# Уровень логирования
+os.environ["LOGGING_LEVEL"] = args.ll
 # Сервер
 # os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
 os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"

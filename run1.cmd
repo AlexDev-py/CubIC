@@ -1,1 +1,1 @@
-venv\scripts\python.exe "dom\run.py" --env "{LOCALAPPDATA}\DOM1"
+venv\scripts\python.exe "dom\run.py" --env "{LOCALAPPDATA}\DOM1" --ll DEBUG
