@@ -287,8 +287,8 @@ class Field(WidgetsGroup):
         self.characters: dict[Cord, CharacterWidget] = {}
         self.ways: dict[Cord, pg.Rect] = {}
         self._way_image = load_image(
-            "default.png",
-            namespace=os.environ["ITEMS_PATH"],
+            "indicator.png",
+            namespace=os.environ["UI_ICONS_PATH"],
             size=(round(self.block_width), round(self.block_height)),
         )
 
@@ -1504,7 +1504,7 @@ class DicesWidget(WidgetsGroup):
             ),
             y=0,
             width=round(parent.field.rect.left / 3),
-            files_namespace=os.environ["CUBE_PATH"],
+            files_namespace=os.path.join(os.environ["CUBE_PATH"], "default"),
         )
 
         self.dice2 = Dice(
@@ -1516,7 +1516,7 @@ class DicesWidget(WidgetsGroup):
             - self.dice.rect.x,
             y=0,
             width=round(parent.field.rect.left / 3),
-            files_namespace=os.environ["CUBE_PATH"],
+            files_namespace=os.path.join(os.environ["CUBE_PATH"], "fight"),
         )
 
     def update(self, *args, **kwargs) -> None:
