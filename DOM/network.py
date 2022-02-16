@@ -404,6 +404,22 @@ class NetworkClient:
             ),
         )
 
+    # === GAME UPDATES ===
+
+    def on_update_players(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "update players",
+            lambda response: (
+                list(
+                    map(
+                        lambda player: self.room.update_player(player),
+                        response["players"],
+                    )
+                ),
+                callback(),
+            ),
+        )
+
     # === ITEMS ===
 
     def buy_item(self, item_index: int, fail_callback: ty.Callable[[str], ...]) -> None:

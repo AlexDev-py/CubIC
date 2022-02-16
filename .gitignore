@@ -2,3 +2,5 @@ venv/
 .idea/
 __pycache__/
 DOM AppData.lnk
+
+/DOM/run__.py

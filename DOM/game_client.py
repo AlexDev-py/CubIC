@@ -1622,6 +1622,13 @@ class GameClientScreen(Group):
             )
         )
 
+        self.network_client.on_update_players(
+            callback=lambda: list(
+                self.update_player(player)
+                for player in self.network_client.room.players
+            )
+        )
+
         self.network_client.on_movement_enemy(callback=self.field.update_field)
 
         self.network_client.on_fight(callback=self.on_fight)
