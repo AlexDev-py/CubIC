@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<enemy name="Змея" hp="1" damage="7" attack_range="1" location="" boss=""/>
