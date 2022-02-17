@@ -123,3 +123,24 @@ def get_delta_cord(
     if delta:
         d_x = delta * d_x // (abs(d_x) or 1)
     return -d_y, -d_x
+
+
+def get_farthest_player(pos: Cord, players: list[Player]) -> Player:
+    """
+    :param pos: Позиция отсчета.
+    :param players: Список игроков.
+    :return: Самый дальний к позиции отсчета игрок.
+    """
+    farthest_player_distance = (float("inf"), float("inf"))
+    farthest_player: Player = ...
+
+    for player in players:
+        distance = (
+            abs(pos[0] - player.character.pos[0]),
+            abs(pos[1] - player.character.pos[1]),
+        )
+        if sum(distance) > sum(farthest_player_distance):
+            farthest_player_distance = distance
+            farthest_player = player
+
+    return farthest_player
