@@ -49,6 +49,7 @@ class Alert(WidgetsGroup):
 
         self._tab = WidgetsGroup(
             parent,
+            f"{name}-Tab",
             x=0,
             y=0,
             width=parent_size[0],
@@ -88,7 +89,7 @@ class Alert(WidgetsGroup):
         """
         logger.opt(colors=True).debug(f"Диалог <y>{self}</y> закрыт")
         self._tab.hide()
-        self._tab.disable()
         for widget in self._tab.parent.objects:
             if widget != self._tab:
                 widget.enable()
+        self._tab.disable()
