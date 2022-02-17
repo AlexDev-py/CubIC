@@ -67,6 +67,9 @@ class Room:
             enemy
         )
 
+    def update_boss(self, boss: dict) -> None:
+        self.boss.__dict__.update(boss)
+
     def init_lvl(
         self,
         lvl: int,

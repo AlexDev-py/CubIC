@@ -7,12 +7,13 @@
 from __future__ import annotations
 
 import os
+import time
 import typing as ty
 from dataclasses import dataclass
 
 import pygame as pg
 
-from base import WidgetsGroup, Group, Label, Alert, Button, Anchor, Line, Text
+from base import WidgetsGroup, Group, Label, Alert, Button, Anchor, Line, Text, Thread
 from base.events import ButtonClickEvent
 from base.widget import BaseWidget
 from database.field_types import Resolution
@@ -216,21 +217,33 @@ class EntityWidget:
     icon: pg.Surface
     rect: pg.Rect
     data: ...
+    indicator: pg.Surface | None
+
+    def blit(self, surface: pg.Surface) -> None:
+        surface.blit(self.icon, self.rect)
+        if self.indicator is not None:
+            rect = self.rect.copy()
+            rect.x = round(rect.x + rect.w / 2 - self.indicator.get_width() / 2)
+            rect.y = rect.top - self.indicator.get_height() - 3
+            surface.blit(self.indicator, rect)
 
 
 @dataclass
 class EnemyWidget(EntityWidget):
     data: Enemy
+    indicator: pg.Surface | None = None
 
 
 @dataclass
 class BossWidget(EntityWidget):
     data: Boss
+    indicator: pg.Surface | None = None
 
 
 @dataclass
 class CharacterWidget(EntityWidget):
     data: Player
+    indicator: pg.Surface | None = None
 
 
 class Field(WidgetsGroup):
@@ -244,6 +257,7 @@ class Field(WidgetsGroup):
         height = width = min(resolution)  # Размеры поля
 
         self.network_client = parent.network_client
+        self.lock_update = False
 
         self._field_image = pg.Surface((width, height))
 
@@ -291,6 +305,12 @@ class Field(WidgetsGroup):
             namespace=os.environ["UI_ICONS_PATH"],
             size=(round(self.block_width), round(self.block_height)),
         )
+        self.hit: dict[Cord, pg.Rect] = {}
+        self._hit_image = load_image(
+            "damage.png",
+            namespace=os.environ["UI_ICONS_PATH"],
+            size=(round(self.block_width), round(self.block_height)),
+        )
 
         self.update_field()
 
@@ -306,6 +326,25 @@ class Field(WidgetsGroup):
                         self.block_width,
                         self.block_height,
                     )
+        self.update_field()
+
+    def init_hit(self, cords: list[Cord]) -> None:
+        self.hit.clear()
+        for cord in cords:
+            cord = tuple(cord)
+            if cord not in self.hit:
+                self.hit[cord] = pg.Rect(
+                    self.block_width * cord[1],
+                    self.block_height * cord[0],
+                    self.block_width,
+                    self.block_height,
+                )
+        self.update_field()
+        Thread(self._delete_hit)
+
+    def _delete_hit(self) -> None:
+        time.sleep(2)
+        self.hit.clear()
         self.update_field()
 
     def _generate_location_map(self) -> None:
@@ -379,37 +418,50 @@ class Field(WidgetsGroup):
         """
         Отображение игры.
         """
+        if self.lock_update:
+            return
+
         image = pg.Surface(self._field_image.get_size())
         for floor_image, floor_rect in self.floors:
             image.blit(floor_image, floor_rect)
 
-        self.boss = BossWidget(
-            self._boss_image,
-            rect=pg.Rect(
-                self.block_width * self.network_client.room.boss.pos[1]
-                - self.block_width * 0.5,
-                self.block_height * self.network_client.room.boss.pos[0]
-                - self.block_width,
-                self._boss_image.get_width(),
-                self._boss_image.get_height(),
-            ),
-            data=self.network_client.room.boss,
+        rect = pg.Rect(
+            self.block_width * self.network_client.room.boss.pos[1]
+            - self.block_width * 0.5,
+            self.block_height * self.network_client.room.boss.pos[0] - self.block_width,
+            self._boss_image.get_width(),
+            self._boss_image.get_height(),
         )
+        if self.boss is ...:
+            self.boss = BossWidget(
+                self._boss_image, rect=rect, data=self.network_client.room.boss
+            )
+        else:
+            self.boss.rect = rect
+            self.boss.data = self.network_client.room.boss
 
+        enemies = {enemy.data.eid: enemy for enemy in self.enemies.values()}
         self.enemies.clear()
         for enemy in self.network_client.room.enemies:
-            self.enemies[tuple(enemy.pos)] = EnemyWidget(
-                self._enemy_image,
-                rect=pg.Rect(
-                    self.block_width * enemy.pos[1]
-                    - ((self._enemy_image.get_width() - self.block_width) / 2),
-                    self.block_height * enemy.pos[0] - self.block_width * 0.25,
-                    self._enemy_image.get_width(),
-                    self._enemy_image.get_height(),
-                ),
-                data=enemy,
+            rect = pg.Rect(
+                self.block_width * enemy.pos[1]
+                - ((self._enemy_image.get_width() - self.block_width) / 2),
+                self.block_height * enemy.pos[0] - self.block_width * 0.25,
+                self._enemy_image.get_width(),
+                self._enemy_image.get_height(),
             )
+            if enemy.eid not in enemies:
+                enemy_widget = EnemyWidget(self._enemy_image, rect=rect, data=enemy)
+            else:
+                enemy_widget = enemies[enemy.eid]
+                enemy_widget.rect = rect
+                enemy_widget.data = enemy
 
+            self.enemies[tuple(enemy.pos)] = enemy_widget
+
+        characters = {
+            character.data.uid: character for character in self.characters.values()
+        }
         self.characters.clear()
         for player in self.network_client.room.players:
             player_image = load_image(
@@ -418,16 +470,21 @@ class Field(WidgetsGroup):
                 size=(None, round(self.block_height * 1.5)),
                 save_ratio=True,
             )
-            player_rect = pg.Rect(
+            rect = pg.Rect(
                 self.block_width * player.character.pos[1]
                 - ((player_image.get_width() - self.block_width) / 2),
                 self.block_height * player.character.pos[0] - self.block_width * 0.5,
                 player_image.get_width(),
                 player_image.get_height(),
             )
-            self.characters[tuple(player.character.pos)] = CharacterWidget(
-                player_image, rect=player_rect, data=player
-            )
+            if player.uid not in characters:
+                character = CharacterWidget(player_image, rect=rect, data=player)
+            else:
+                character = characters[player.uid]
+                character.rect = rect
+                character.data = player
+
+            self.characters[tuple(player.character.pos)] = character
 
         for i, walls_line in enumerate(self.walls):
             for j, wall in enumerate(walls_line):
@@ -436,12 +493,14 @@ class Field(WidgetsGroup):
                 j -= 1
                 if way := self.ways.get((i, j)):
                     image.blit(self._way_image, way)
+                if hit := self.hit.get((i, j)):
+                    image.blit(self._hit_image, hit)
                 if enemy := self.enemies.get((i, j)):
-                    image.blit(enemy.icon, enemy.rect)
+                    enemy.blit(image)
                 if character := self.characters.get((i, j)):
-                    image.blit(character.icon, character.rect)
+                    character.blit(image)
                 if tuple(self.boss.data.pos) == (i, j):
-                    image.blit(self.boss.icon, self.boss.rect)
+                    self.boss.blit(image)
 
         self.field_image = image
 
@@ -1630,13 +1689,17 @@ class GameClientScreen(Group):
         )
 
         self.network_client.on_movement_enemy(callback=self.field.update_field)
+        self.network_client.on_movement_boss(callback=self.field.update_field)
+        self.network_client.on_hit(self.on_hit)
 
         self.network_client.on_fight(callback=self.on_fight)
+        self.network_client.on_need_choice_enemy(self.on_need_choice_enemy)
 
         self.network_client.on_rolling_the_dice(callback=self.rolling_the_dice)
         self.network_client.on_rolling_the_fight_dice(
             callback=self.rolling_the_fight_dice
         )
+        self.network_client.on_boss_rolling_the_dice(self.rolling_the_fight_dice)
         self.network_client.on_set_queue(callback=self.on_set_queue)
 
     def update_player(self, player: Player) -> None:
@@ -1666,9 +1729,23 @@ class GameClientScreen(Group):
                 )
                 if widget.username.color != color:
                     widget.username.color = color
+        elif queue == "boss":
+            self.pass_move_button.hide()
+            self.pass_move_button.disable()
+
+            for widget in [*self.players_menu.players, self.players_menu.client_player]:
+                color = pg.Color("red")
+                if widget.username.color != color:
+                    widget.username.color = color
 
     def on_fight(self, uid: int) -> None:
         if uid == self.players_menu.client_player.player.uid:
+            if eids := self.__dict__.get("eids"):
+                for enemy in self.field.enemies.values():
+                    if enemy.data.eid in eids:
+                        enemy.indicator = None
+                del self.__dict__["eids"]
+                self.field.update_field()
             self.pass_move_button.show()
             self.pass_move_button.enable()
         else:
@@ -1680,10 +1757,29 @@ class GameClientScreen(Group):
             if widget.username.color != color:
                 widget.username.color = color
 
+    def on_hit(self, cords: list[tuple[int, int]]) -> None:
+        self.field.init_hit(cords)
+
+    def on_need_choice_enemy(self, uid: int, eids: list[int]) -> None:
+        icon_size = int(int(os.environ["icon_size"]) * 0.5)
+
+        if uid == self.network_client.user.uid:
+            self.__dict__["eids"] = eids
+            for enemy in self.field.enemies.values():
+                if enemy.data.eid in eids:
+                    enemy.indicator = load_image(
+                        "damage.png",
+                        namespace=os.environ["UI_ICONS_PATH"],
+                        size=(icon_size, icon_size),
+                    )
+            self.field.update_field()
+
     def rolling_the_dice(self, movement: list[tuple[int, int]]):
+        self.field.lock_update = True
         self.dices_widget.dice.move_from_list(movement)
 
     def rolling_the_fight_dice(self, movement: list[tuple[int, int]]):
+        self.field.lock_update = True
         self.dices_widget.dice2.move_from_list(movement)
 
     def exec(self) -> str:
@@ -1723,6 +1819,7 @@ class GameClientScreen(Group):
                             fail_callback=lambda msg: self.info_alert.show_message(msg),
                         )
             elif event.type == DiceMovingStop.type:
+                self.field.lock_update = False
                 if event.obj == self.dices_widget.dice:
                     player = self.network_client.room.get_by_uid(
                         self.network_client.user.uid
@@ -1741,6 +1838,8 @@ class GameClientScreen(Group):
                                 self.network_client.room.field,
                             )
                         )
+                    else:
+                        self.field.update_field()
                 elif event.obj == self.dices_widget.dice2:
                     if not self.pass_move_button.hidden:
                         self.pass_move_button.enable()
@@ -1759,6 +1858,11 @@ class GameClientScreen(Group):
                         if self.field.get_global_rect_of(
                             self.field.boss.rect
                         ).collidepoint(event.pos):
+                            if self.__dict__.get("eids"):
+                                self.network_client.choice_enemy(
+                                    -1,
+                                    fail_callback=self.info_alert.show_message,
+                                )
                             self.enemy_menu.hide()
                             self.player_nemu.hide()
                             self.player_nemu.disable()
