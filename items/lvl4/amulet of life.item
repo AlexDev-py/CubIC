@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Амулет жизни" lvl="4" price="" count="1" group="amulet" icon="amulet.png">
+    <desc>
+        <max_hp>+5</max_hp>
+    </desc>
+</item>

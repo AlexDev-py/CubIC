@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Старое копье" lvl="1" price="" count="5" icon="spear.png">
+    <desc>
+        <attack_range>+1</attack_range>
+    </desc>
+</item>

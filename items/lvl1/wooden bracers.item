@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Деревянные наручи" lvl="1" price="" count="4" icon="bracers.png">
+    <desc>
+        <armor>+1</armor>
+    </desc>
+</item>

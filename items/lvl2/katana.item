@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Катана" lvl="2" price="" count="4" group="" icon="katana.png">
+    <desc>
+        <damage>+2</damage>
+    </desc>
+</item>

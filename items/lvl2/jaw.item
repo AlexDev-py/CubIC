@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Челюсть" lvl="2" price="" count="5" group="" icon="jaw.png">
+    <desc>
+        <damage>+1</damage>
+        <life_abduction>+1</life_abduction>
+    </desc>
+</item>

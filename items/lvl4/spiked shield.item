@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Шипастый щит" lvl="4" price="" count="2" group="" icon="shield.png">
+    <desc>
+        <damage>+1</damage>
+        <armor>+4</armor>
+    </desc>
+</item>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Эль" lvl="2" price="" count="6" icon="ale.png">
+    <desc>
+        <damage>+2</damage>
+        <attack_range>-1</attack_range>
+        <armor>-2</armor>
+    </desc>
+</item>

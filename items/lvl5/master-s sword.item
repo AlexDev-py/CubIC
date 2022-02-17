@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Меч мастера" lvl="5" price="" count="1" group="" icon="master-s_sword.png">
+    <desc>
+        <damage>+6</damage>
+        <attack_range>+1</attack_range>
+        <life_abduction>+1</life_abduction>
+    </desc>
+    <scale stages="2">
+        <damage>+2</damage>
+    </scale>
+</item>
