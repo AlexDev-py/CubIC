@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<enemy name="Рыцарь-мечник" hp="4" damage="1" attack_range="1" location="" boss="" icon="knight_swordsman.png"/>

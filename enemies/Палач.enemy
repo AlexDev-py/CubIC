@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<enemy name="Палач" hp="10" damage="4" attack_range="1" location="" boss="" icon="executioner.png"/>
