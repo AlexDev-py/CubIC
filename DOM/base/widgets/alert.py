@@ -79,9 +79,12 @@ class Alert(WidgetsGroup):
         logger.opt(colors=True).debug(f"Диалог <y>{self}</y> открыт")
         self._tab.show()
         self._tab.enable()
+        self.__dict__["disabled_widgets"] = []
         for widget in self._tab.parent.objects:
             if widget != self._tab:
-                widget.disable()
+                if widget.enabled:
+                    self.__dict__["disabled_widgets"].append(widget)
+                    widget.disable()
 
     def hide(self) -> None:
         """
@@ -89,7 +92,8 @@ class Alert(WidgetsGroup):
         """
         logger.opt(colors=True).debug(f"Диалог <y>{self}</y> закрыт")
         self._tab.hide()
-        for widget in self._tab.parent.objects:
-            if widget != self._tab:
+        if widgets := self.__dict__.get("disabled_widgets"):
+            for widget in widgets:
                 widget.enable()
+            del self.__dict__["disabled_widgets"]
         self._tab.disable()

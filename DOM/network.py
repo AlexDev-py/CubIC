@@ -18,6 +18,10 @@ from loguru import logger
 from game import Room, Player
 from game.room import Move
 
+if ty.TYPE_CHECKING:
+    from game.enemy import Enemy
+    from game.boss import Boss
+
 
 class UserStatus(ty.NamedTuple):
     text: str
@@ -463,62 +467,52 @@ class NetworkClient:
             ),
         )
 
-    # === MOVE ===
+    # === MOVING ===
 
     def move(self, y: int, x: int, fail_callback: ty.Callable[[str], ...]) -> None:
         self.sio.on("move", lambda response: fail_callback(response.get("msg", "Err")))
         self.sio.emit("move", dict(room_id=self.room.room_id, y=y, x=x))
 
-    def on_movement_player(self, callback: ty.Callable[[Player], ...]) -> None:
-        self.__dict__["on_movement_player_callback"] = callback
-
-    def on_movement_enemy(self, callback: ty.Callable[[], ...]) -> None:
-        self.__dict__["on_movement_enemy_callback"] = callback
-
-    def on_movement_boss(self, callback: ty.Callable[[], ...]) -> None:
-        self.__dict__["on_movement_boss_callback"] = callback
-
-    def _on_movement(self, response: dict[str, ...]) -> None:
-        if response.get("obj") == "p":
-            logger.opt(colors=True).info(
-                f"<y>{response['player']['username']}</y> move "
-                f"<c>{response['player']['character']['pos']}</c>"
-                f" -> <c>{response['pos']}</c>"
-            )
-            self.room.update_player(response["player"])
-            if callback := self.__dict__.get("on_movement_player_callback"):
-                callback(self.room.get_by_uid(response["player"]["uid"]))
-        elif response.get("obj") == "e":
-            logger.opt(colors=True).info(
-                f"enemy <y>{response['eid']}</y> move to <c>{response['pos']}</c>"
-            )
-            self.room.update_enemy(response["enemy"])
-            if callback := self.__dict__.get("on_movement_enemy_callback"):
-                callback()
-        elif response.get("obj") == "boss":
-            logger.opt(colors=True).info(
-                f"<y>Boss</y> move to <c>{response['pos']}</c>"
-            )
-            self.room.update_boss(response["boss"])
-            if callback := self.__dict__.get("on_movement_boss_callback"):
-                callback()
-
-    # === QUEUE ===
-
-    def pass_move(self) -> None:
-        self.sio.emit("pass move", dict(room_id=self.room.room_id))
-
-    def on_set_queue(self, callback: ty.Callable[[str], ...]) -> None:
+    def on_player_moving(self, callback: ty.Callable[[], ...]) -> None:
         self.sio.on(
-            "set queue",
+            "player moving",
             lambda response: (
-                logger.opt(colors=True).info(f"Ход передан <y>{response['queue']}</y>"),
-                self.room.__setattr__("queue", response["queue"]),
-                callback(response["queue"]),
+                logger.opt(colors=True).info(
+                    f"<y>{response['player']['username']}</y> "
+                    f"move to <c>{response['pos']}</c>"
+                ),
+                self.room.update_player(response["player"]),
+                callback(),
             ),
         )
 
-    # === ROLL THE DICE ===
+    def on_enemy_moving(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "enemy moving",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Enemy <y>{response['eid']}</y> move to <c>{response['pos']}</c>"
+                ),
+                self.room.update_enemy(response["enemy"]),
+                callback(),
+                self.next(),
+            ),
+        )
+
+    def on_boss_moving(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "boss moving",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"<y>Boss</y> move to <c>{response['pos']}</c>"
+                ),
+                self.room.update_boss(response["boss"]),
+                callback(),
+                self.next(),
+            ),
+        )
+
+    # == ROLL THE DICE ==
 
     def roll_the_dice(self, fail_callback: ty.Callable[[str], ...]) -> None:
         self.sio.on(
@@ -544,7 +538,42 @@ class NetworkClient:
             ),
         )
 
+    # === QUEUE ===
+
+    def next(self, command: str = "") -> None:
+        self.sio.emit("next", dict(room_id=self.room.room_id, command=command))
+
+    def pass_move(self, fail_callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on(
+            "pass move", lambda response: fail_callback(response.get("msg", "Err"))
+        )
+        self.sio.emit("pass move", dict(room_id=self.room.room_id))
+
+    def on_set_queue(self, callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on(
+            "set queue",
+            lambda response: (
+                logger.opt(colors=True).info(f"Ход передан <y>{response['queue']}</y>"),
+                self.room.__setattr__("queue", response["queue"]),
+                callback(response["queue"]),
+            ),
+        )
+
     # === FIGHT ===
+
+    def on_fight(self, callback: ty.Callable[[int], ...]) -> None:
+        self.sio.on(
+            "fight",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"fight user <y>{response['uid']}</y> and enemy "
+                    f"<y>{response['eid']}</y>"
+                ),
+                callback(response["uid"]),
+            ),
+        )
+
+    # == FIGHT DICE ==
 
     def roll_the_fight_dice(self, fail_callback: ty.Callable[[str], ...]) -> None:
         self.sio.on(
@@ -562,14 +591,6 @@ class NetworkClient:
                     f"Игрок <y>{response['uid']}</y> кинул кость боя: "
                     f"<c>{response['movement']}</c> -> <c>{response['result']}</c>"
                 ),
-                list(
-                    map(
-                        lambda player: self.room.update_player(player),
-                        response["players"],
-                    )
-                ),
-                self.room.update_enemies(response["enemies"]),
-                self.room.update_boss(response["boss"]),
                 callback(response["movement"]),
             ),
         )
@@ -584,15 +605,79 @@ class NetworkClient:
                     f"<y>Босс</y> кинул кость боя: "
                     f"<c>{response['movement']}</c> -> <c>{response['result']}</c>"
                 ),
-                list(
-                    map(
-                        lambda player: self.room.update_player(player),
-                        response["players"],
-                    )
-                ),
-                self.room.update_enemies(response["enemies"]),
-                self.room.update_boss(response["boss"]),
                 callback(response["movement"]),
+            ),
+        )
+
+    # == HITS ==
+
+    def on_hit_player(self, callback: ty.Callable[[Player], ...]) -> None:
+        self.sio.on(
+            "hit player",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{response['player']['username']}</y> ранен "
+                    f"<y>hp</y>=<c>{response['player']['character']['hp']}</c>"
+                ),
+                self.room.update_player(response["player"]),
+                callback(self.room.get_by_uid(response["uid"])),
+            ),
+        )
+
+    def on_hit_enemy(self, callback: ty.Callable[[Enemy], ...]) -> None:
+        self.sio.on(
+            "hit enemy",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{self.room.get_by_uid(response['uid']).username}</y> "
+                    f"ранил врага <y>{response['eid']}</y> "
+                    f"<y>hp</y>=<c>{response['enemy']['hp']}</c>"
+                ),
+                self.room.update_enemy(response["enemy"]),
+                callback(self.room.get_by_eid(response["eid"])),
+                self.next(),
+            ),
+        )
+
+    def on_kill_enemy(self, callback: ty.Callable[[int], ...]) -> None:
+        self.sio.on(
+            "kill enemy",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{self.room.get_by_uid(response['uid']).username}</y> "
+                    f"убил врага <y>{response['eid']}</y> "
+                ),
+                self.room.enemies.remove(self.room.get_by_eid(response["eid"])),
+                callback(response["eid"]),
+                self.next(),
+            ),
+        )
+
+    def on_hit_boss(self, callback: ty.Callable[[Boss], ...]) -> None:
+        self.sio.on(
+            "hit boss",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{self.room.get_by_uid(response['uid']).username}</y> "
+                    f"ранил босса <y>hp</y>=<c>{response['boss']['hp']}</c>"
+                ),
+                self.room.update_boss(response["boss"]),
+                callback(self.room.boss),
+                self.next(),
+            ),
+        )
+
+    def on_kill_boss(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "kill boss",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{self.room.get_by_uid(response['uid']).username}</y> "
+                    f"убил босса"
+                ),
+                self.room.update_boss(response["boss"]),
+                callback(),
+                self.next(),
             ),
         )
 
@@ -608,26 +693,7 @@ class NetworkClient:
             ),
         )
 
-    def on_fight(self, callback: ty.Callable[[int], ...]) -> None:
-        self.sio.on(
-            "fight",
-            lambda response: (
-                logger.opt(colors=True).info(
-                    f"fight user <y>{response['uid']}</y> and enemy "
-                    f"<y>{response['eid']}</y>"
-                ),
-                callback(response["uid"]),
-            ),
-        )
-
-    def on_end_fight(self, callback: ty.Callable[[], ...]) -> None:
-        self.sio.on(
-            "end fight",
-            lambda response: (
-                logger.opt(colors=True).info(f"all fights is over"),
-                callback(),
-            ),
-        )
+    # == CHOICE ENEMY ==
 
     def choice_enemy(self, eid: int, fail_callback: ty.Callable[[str], ...]) -> None:
         self.sio.on(
@@ -690,4 +756,4 @@ class NetworkClient:
         ).json()
 
     def connect_handlers(self) -> None:
-        self.sio.on("movement", lambda response: self._on_movement(response))
+        self.sio.on("need next", lambda *_: self.next())

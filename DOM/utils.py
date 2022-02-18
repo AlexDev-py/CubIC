@@ -13,7 +13,7 @@ import typing as ty
 import pygame as pg
 from loguru import logger
 
-from base import Alert, Text, Button, WidgetsGroup
+from base import Alert, Text, Button, WidgetsGroup, Anchor
 from base.text_filters import LengthTextFilter, AlphabetTextFilter
 from database.field_types import Resolution
 
@@ -329,3 +329,62 @@ class DropMenu(WidgetsGroup):
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
+
+
+class LoadingScreen(Alert):
+    def __init__(
+        self, parent: Group, name: str = None, *, parent_size: tuple[int, int]
+    ):
+        """
+        Экран загрузки.
+        Не имеет кнопки закрытия. Закрывается только программно.
+        :param parent: Объект к которому принадлежит виджет.
+        :param name: Название объекта.
+        :param parent_size: Размер родительского виджета.
+        """
+        font_size = int(os.environ.get("font_size", 20))
+        font = os.environ.get("font")
+
+        super(LoadingScreen, self).__init__(
+            parent,
+            name,
+            parent_size=parent_size,
+            width=round(parent_size[0] * 0.8),
+            background=pg.Color("black"),
+            fogging=255,
+        )
+
+        self.text = Text(
+            self,
+            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            y=0,
+            width=self.rect.width - self.padding * 2,
+            text="...",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+            anchor=Anchor.center,
+            soft_split=True,
+        )
+
+    def show_message(self, text: str) -> None:
+        """
+        Изменяет текст и показывает виджет.
+        :param text: Текст сообщения.
+        """
+        self.text.text = text
+        self.show()
+
+    def update(self) -> None:
+        super(LoadingScreen, self).update()
+        if self.parent.parent.objects and self.parent in self.parent.parent.objects:
+            if self.parent.parent.objects[-1] is not self.parent:
+                self.parent.parent._objects.remove(self.parent)
+                self.parent.parent.objects.append(self.parent)
+
+    def show(self) -> None:
+        super(LoadingScreen, self).show()
+        self.parent.parent.disable()
+
+    def hide(self) -> None:
+        super(LoadingScreen, self).hide()
+        self.parent.parent.enable()

@@ -20,7 +20,7 @@ from database.field_types import Resolution
 from dice import Dice, DiceMovingStop
 from game.tools import get_ways
 from settings_alert import Settings
-from utils import load_image, FinishStatus, InfoAlert, DropMenu
+from utils import load_image, FinishStatus, InfoAlert, DropMenu, LoadingScreen
 
 if ty.TYPE_CHECKING:
     from game.tools import Cords, Cord
@@ -311,6 +311,12 @@ class Field(WidgetsGroup):
             namespace=os.environ["UI_ICONS_PATH"],
             size=(round(self.block_width), round(self.block_height)),
         )
+        self._finish_image = load_image(
+            "indicator.png",
+            namespace=os.environ["UI_ICONS_PATH"],
+            size=(round(self.block_width), round(self.block_height)),
+        )
+        self.finish: pg.Rect = ...
 
         self.update_field()
 
@@ -329,7 +335,6 @@ class Field(WidgetsGroup):
         self.update_field()
 
     def init_hit(self, cords: list[Cord]) -> None:
-        self.hit.clear()
         for cord in cords:
             cord = tuple(cord)
             if cord not in self.hit:
@@ -340,7 +345,7 @@ class Field(WidgetsGroup):
                     self.block_height,
                 )
         self.update_field()
-        Thread(self._delete_hit)
+        Thread(self._delete_hit).run()
 
     def _delete_hit(self) -> None:
         time.sleep(2)
@@ -493,14 +498,24 @@ class Field(WidgetsGroup):
                 j -= 1
                 if way := self.ways.get((i, j)):
                     image.blit(self._way_image, way)
-                if hit := self.hit.get((i, j)):
-                    image.blit(self._hit_image, hit)
                 if enemy := self.enemies.get((i, j)):
                     enemy.blit(image)
                 if character := self.characters.get((i, j)):
                     character.blit(image)
+                if hit := self.hit.get((i, j)):
+                    image.blit(self._hit_image, hit)
                 if tuple(self.boss.data.pos) == (i, j):
-                    self.boss.blit(image)
+                    if self.boss.data.hp > 0:
+                        self.boss.blit(image)
+
+        if self.network_client.room.boss.hp == 0:
+            self.finish = pg.Rect(
+                self.block_width * self.network_client.room.field[-1].index(True),
+                self.block_height * (len(self.network_client.room.field) - 1),
+                self._finish_image.get_width(),
+                self._finish_image.get_height(),
+            )
+            image.blit(self._finish_image, self.finish)
 
         self.field_image = image
 
@@ -528,7 +543,7 @@ class Field(WidgetsGroup):
 
 
 class StatWidget(WidgetsGroup):
-    def __init__(self, name: str, x: int, y: int, icon: str, value: str):
+    def __init__(self, name: str, x: int, y: int | CordFunction, icon: str, value: str):
         """
         Виджет характеристики.
         Иконка + значение.
@@ -770,7 +785,7 @@ class ItemsWidget(WidgetsGroup):
 class ItemStand(WidgetsGroup):
     def __init__(self, name: str, x: int, y: int, width: int, item: Item):
         """
-        Стэнд с предметом.
+        Стенд с предметом.
         :param name: Название виджета.
         :param x: Координата x.
         :param y: Координата y.
@@ -1191,6 +1206,8 @@ class EnemyMenu(WidgetsGroup):
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
+        self.enemy: EnemyWidget | None = None
+
         super(EnemyMenu, self).__init__(
             parent,
             "EnemyMenu",
@@ -1232,6 +1249,7 @@ class EnemyMenu(WidgetsGroup):
         self.stats: list[StatWidget] = []
 
     def init(self, enemy: EnemyWidget) -> None:
+        self.enemy = enemy
         self.stats_widget.remove(*self.stats)
         self.stats.clear()
 
@@ -1247,6 +1265,10 @@ class EnemyMenu(WidgetsGroup):
 
         self.enable()
         self.show()
+
+    def update_data(self, enemy: Enemy) -> None:
+        self.enemy.data.__dict__.update(enemy.__dict__)
+        self.init(self.enemy)
 
     def add_stat(self, icon: str, value: int) -> StatWidget:
         """
@@ -1365,16 +1387,27 @@ class BossMenu(WidgetsGroup):
             font=pg.font.Font(font, font_size),
         )
 
+        self.hp = StatWidget(
+            f"{self.name}-HpStat",
+            x=0,
+            y=lambda obj: self.icon.rect.bottom + 5,
+            icon="hp.png",
+            value=str(),
+        )
+        self.add(self.hp)
+
         self.skills_widget = WidgetsGroup(
             self,
             f"{self.name}-SkillsWidget",
             x=0,
-            y=lambda obj: self.icon.rect.bottom + 5,
+            y=lambda obj: self.hp.rect.bottom + 5,
             width=self.rect.width - self.padding * 2,
         )
         self.skills: list[BossSkill] = []
 
     def init(self, boss: BossWidget) -> None:
+        self.hp.value.text = str(boss.data.hp)
+
         self.skills_widget.remove(*self.skills)
         self.skills.clear()
 
@@ -1603,10 +1636,16 @@ class GameClientScreen(Group):
         )
 
         # Если выставлено максимально возможное разрешение, открываем окно в полный экран
-        if resolution >= Resolution.converter(os.environ["MAX_RESOLUTION"]):
-            self.screen = pg.display.set_mode(resolution, pg.FULLSCREEN)
-        else:
-            self.screen = pg.display.set_mode(resolution)
+        if not hasattr(self, "screen"):
+            if resolution >= Resolution.converter(os.environ["MAX_RESOLUTION"]):
+                self.screen = pg.display.set_mode(resolution, pg.FULLSCREEN)
+            else:
+                self.screen = pg.display.set_mode(resolution)
+
+        self.loading_screen = LoadingScreen(
+            self, f"{self.name}-LoadingScreen", parent_size=resolution
+        )
+        self.loading_screen.show_message("Загрузка окружения...")
 
         self.field = Field(self)
         self.players_menu = PlayersMenu(self)
@@ -1626,7 +1665,9 @@ class GameClientScreen(Group):
             anchor=Anchor.center,
             border_color=pg.Color("red"),
             border_width=3,
-            callback=lambda ev: self.network_client.pass_move(),
+            callback=lambda ev: self.network_client.pass_move(
+                self.info_alert.show_message
+            ),
         )
         if self.network_client.room.queue != f"p{self.network_client.user.uid}":
             self.pass_move_button.hide()
@@ -1658,6 +1699,9 @@ class GameClientScreen(Group):
                 self.field.update_field(),
             )
         )
+        self.network_client.on_start_game(callback=self.on_start_game)
+
+        # ITEMS
         self.network_client.on_buying_an_item(
             callback=lambda item_index, player: (
                 self.shop.items[item_index].sales(),
@@ -1670,37 +1714,86 @@ class GameClientScreen(Group):
                 ),
             )
         )
-        self.network_client.on_removing_an_item(
-            callback=lambda player: self.update_player(player)
-        )
+        self.network_client.on_removing_an_item(callback=self.update_player)
 
-        self.network_client.on_movement_player(
-            callback=lambda player: (
+        # MOVING
+        self.network_client.on_player_moving(
+            callback=lambda: (
                 self.field.ways.clear(),
                 self.field.update_field(),
+                self.network_client.next(),
             )
         )
+        self.network_client.on_enemy_moving(callback=self.field.update_field)
+        self.network_client.on_boss_moving(callback=self.field.update_field)
 
+        # UPDATES
         self.network_client.on_update_players(
             callback=lambda: list(
                 self.update_player(player)
                 for player in self.network_client.room.players
             )
         )
+        self.network_client.on_set_queue(callback=self.on_set_queue)
 
-        self.network_client.on_movement_enemy(callback=self.field.update_field)
-        self.network_client.on_movement_boss(callback=self.field.update_field)
-        self.network_client.on_hit(self.on_hit)
-
+        # FIGHT
         self.network_client.on_fight(callback=self.on_fight)
+
+        # HITS
+        self.network_client.on_hit_player(callback=self.update_player)
+        self.network_client.on_hit_enemy(
+            callback=lambda enemy: (
+                self.field.update_field(),
+                (
+                    self.enemy_menu.update_data(enemy)
+                    if not self.enemy_menu.hidden
+                    and self.enemy_menu.enemy is not None
+                    and self.enemy_menu.enemy.data.eid == enemy.eid
+                    else ...
+                ),
+            )
+        )
+        self.network_client.on_kill_enemy(
+            callback=lambda eid: (
+                self.field.update_field(),
+                (
+                    (self.enemy_menu.disable(), self.enemy_menu.hide())
+                    if not self.enemy_menu.hidden
+                    and self.enemy_menu.enemy is not None
+                    and self.enemy_menu.enemy.data.eid == eid
+                    else ...
+                ),
+            )
+        )
+        self.network_client.on_hit_boss(
+            callback=lambda boss: (
+                self.boss_menu.hp.value.__setattr__("text", str(boss.hp))
+                if not self.boss_menu.hidden
+                else ...
+            )
+        )
+        self.network_client.on_kill_boss(callback=self.field.update_field)
+        self.network_client.on_hit(callback=self.on_hit)
+
+        # CHOICE ENEMY
         self.network_client.on_need_choice_enemy(self.on_need_choice_enemy)
 
+        # ROLLING DICES
         self.network_client.on_rolling_the_dice(callback=self.rolling_the_dice)
         self.network_client.on_rolling_the_fight_dice(
             callback=self.rolling_the_fight_dice
         )
-        self.network_client.on_boss_rolling_the_dice(self.rolling_the_fight_dice)
-        self.network_client.on_set_queue(callback=self.on_set_queue)
+        self.network_client.on_boss_rolling_the_dice(
+            callback=self.rolling_the_fight_dice
+        )
+
+        if self.__dict__.get("eids"):
+            del self.__dict__["eids"]
+
+        self.loading_screen.hide()
+
+    def on_start_game(self) -> None:
+        self.__init__()
 
     def update_player(self, player: Player) -> None:
         if player.uid == self.players_menu.client_player.player.uid:
@@ -1714,6 +1807,15 @@ class GameClientScreen(Group):
                     self.player_nemu.update_data(player)
 
     def on_set_queue(self, queue: str) -> None:
+        if len(self.field.ways):
+            self.field.ways.clear()
+            self.field.update_field()
+        if eids := self.__dict__.get("eids"):
+            for enemy in self.field.enemies.values():
+                if enemy.data.eid in eids:
+                    enemy.indicator = None
+            self.field.update_field()
+
         if queue.startswith("p"):
             uid = int(queue[1:])
             if uid == self.players_menu.client_player.player.uid:
@@ -1737,6 +1839,8 @@ class GameClientScreen(Group):
                 color = pg.Color("red")
                 if widget.username.color != color:
                     widget.username.color = color
+
+        self.network_client.next()
 
     def on_fight(self, uid: int) -> None:
         if uid == self.players_menu.client_player.player.uid:
@@ -1775,11 +1879,9 @@ class GameClientScreen(Group):
             self.field.update_field()
 
     def rolling_the_dice(self, movement: list[tuple[int, int]]):
-        self.field.lock_update = True
         self.dices_widget.dice.move_from_list(movement)
 
     def rolling_the_fight_dice(self, movement: list[tuple[int, int]]):
-        self.field.lock_update = True
         self.dices_widget.dice2.move_from_list(movement)
 
     def exec(self) -> str:
@@ -1787,12 +1889,8 @@ class GameClientScreen(Group):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.terminate()
-                elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_ESCAPE:
-                        # Обработка открытия / закрытия меню
-                        if self.esc_menu.parent.hidden:
-                            self.esc_menu.show()
                 self.handle_event(event)
+                self.loading_screen.update()
             self.dices_widget.update()
             self.render()
             self.clock.tick()
@@ -1810,7 +1908,12 @@ class GameClientScreen(Group):
     def handle_event(self, event: pg.event.Event) -> None:
         super(GameClientScreen, self).handle_event(event)
         if self.enabled:
-            if event.type == ButtonClickEvent.type:
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    # Обработка открытия / закрытия меню
+                    if self.esc_menu.parent.hidden:
+                        self.esc_menu.show()
+            elif event.type == ButtonClickEvent.type:
                 # Кнопка покупки предмета
                 if event.obj == self.shop.buy_button:
                     if self.shop.item_desc is not ...:
@@ -1819,7 +1922,6 @@ class GameClientScreen(Group):
                             fail_callback=lambda msg: self.info_alert.show_message(msg),
                         )
             elif event.type == DiceMovingStop.type:
-                self.field.lock_update = False
                 if event.obj == self.dices_widget.dice:
                     player = self.network_client.room.get_by_uid(
                         self.network_client.user.uid
@@ -1846,6 +1948,7 @@ class GameClientScreen(Group):
                     self.field.update_field()
                     for player in self.network_client.room.players:
                         self.update_player(player)
+                self.network_client.next("stop rolling")
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == pg.BUTTON_LEFT:
                     for pos, rect in self.field.ways.items():
@@ -1855,23 +1958,29 @@ class GameClientScreen(Group):
                             )
 
                     if self.field.boss is not ...:
-                        if self.field.get_global_rect_of(
-                            self.field.boss.rect
-                        ).collidepoint(event.pos):
-                            if self.__dict__.get("eids"):
-                                self.network_client.choice_enemy(
-                                    -1,
-                                    fail_callback=self.info_alert.show_message,
-                                )
-                            self.enemy_menu.hide()
-                            self.player_nemu.hide()
-                            self.player_nemu.disable()
-                            self.boss_menu.init(self.field.boss)
-                            return
+                        if self.field.boss.data.hp > 0:
+                            if self.field.get_global_rect_of(
+                                self.field.boss.rect
+                            ).collidepoint(event.pos):
+                                if self.__dict__.get("eids"):
+                                    self.network_client.choice_enemy(
+                                        -1,
+                                        fail_callback=self.info_alert.show_message,
+                                    )
+                                self.enemy_menu.hide()
+                                self.player_nemu.hide()
+                                self.player_nemu.disable()
+                                self.boss_menu.init(self.field.boss)
+                                return
                     for enemy in self.field.enemies.values():
                         if self.field.get_global_rect_of(enemy.rect).collidepoint(
                             event.pos
                         ):
+                            if self.__dict__.get("eids"):
+                                self.network_client.choice_enemy(
+                                    enemy.data.eid,
+                                    fail_callback=self.info_alert.show_message,
+                                )
                             self.boss_menu.hide()
                             self.player_nemu.hide()
                             self.player_nemu.disable()
@@ -1910,3 +2019,10 @@ class GameClientScreen(Group):
                                 self.pass_move_button.enable(),
                             )
                         )
+
+                    if self.field.finish is not ...:
+                        if self.field.get_global_rect_of(
+                            self.field.finish
+                        ).collidepoint(event.pos):
+                            self.loading_screen.show_message("Переход на новый уровень")
+                            self.network_client.start_game()
