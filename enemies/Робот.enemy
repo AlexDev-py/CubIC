@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Робот" hp="5" damage="4" attack_range="1" location="" boss="" icon="robot.png"/>

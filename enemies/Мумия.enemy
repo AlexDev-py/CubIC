@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Мумия" hp="4" damage="4" attack_range="1" location="desert" boss="" icon="mummy.png"/>
