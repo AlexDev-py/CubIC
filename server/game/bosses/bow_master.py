@@ -112,7 +112,6 @@ class BowMaster(BaseBoss):
             cord_first = (cord_4[0], cord_4[1] + delta_cord_2[1])
             cord_second = (cord_4[0] + delta_cord_2[0], cord_4[1])
             cords.extend([cord_first, cord_second])
-        self.hit(cords, players, 6)
 
         cord_5 = (self.pos[0] + delta_cord_5[0], self.pos[1] + delta_cord_5[1])
         cords.append(cord_5)
