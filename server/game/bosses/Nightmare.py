@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as ty
 
 from .base import BaseBoss
-from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cord, get_ray, get_farset_playters, \
+from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cord, get_ray, \
     get_farthest_player
 
 if ty.TYPE_CHECKING:
