@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Деревянная дубина" lvl="2" price="100" count="4" group="" icon="cudgel.png">
+    <desc>
+        <damage>+2</damage>
+        <armor>+1</armor>
+        <move_speed>-1</move_speed>
+    </desc>
+</item>

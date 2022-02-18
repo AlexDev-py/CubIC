@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Острый меч" lvl="2" price="105" count="8" group="" icon="sword.png">
+    <desc>
+        <damage>+3</damage>
+    </desc>
+</item>

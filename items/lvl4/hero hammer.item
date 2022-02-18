@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Геройский молот" lvl="4" price="1100" count="3" group="" icon="hammer.png">
+    <desc>
+        <damage>+5</damage>
+    </desc>
+</item>

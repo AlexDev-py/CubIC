@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Волчьи лапы" lvl="5" price="10000" count="1" group="" icon="wolf_paws.png">
+    <desc>
+        <move_speed>+5</move_speed>
+    </desc>
+</item>

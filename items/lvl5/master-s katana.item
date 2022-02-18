@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<item name="Катана мастера" lvl="5" price="10000" count="1" group="" icon="master-s_katana.png">
+    <desc>
+        <damage>+8</damage>
+        <armor>-1</armor>
+    </desc>
+    <scale stages="1">
+        <damage>+1</damage>
+    </scale>
+</item>
