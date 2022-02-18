@@ -3,7 +3,8 @@ from __future__ import annotations
 import typing as ty
 
 from .base import BaseBoss
-from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cord, get_ray, get_farset_playters
+from ..tools import get_closest_player, get_all_neighboring_cords, get_delta_cord, get_ray, get_farset_playters, \
+    get_farthest_player
 
 if ty.TYPE_CHECKING:
     from ..player import Player
@@ -71,7 +72,7 @@ class Nightmare(BaseBoss):
     def third_skill(
         self, field: list[list[True | False]], players: list[Player], room: Room
     ) -> None:
-        farset_players = get_farset_playters(self.pos, players)
+        farset_players = get_farthest_player(self.pos, players)
         self.hit(farset_players.character.pos, players, 3)
 
     def fourth_skill(
