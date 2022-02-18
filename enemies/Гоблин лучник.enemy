@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Гоблин Лучник" hp="2" damage="2" attack_range="2" location="" boss=""/>
+<enemy name="Гоблин Лучник" hp="2" damage="2" attack_range="2" location="" boss="" icon="goblin_archer.png"/>

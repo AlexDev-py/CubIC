@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Слизень" hp="2" damage="2" attack_range="1" location="" boss=""/>
+<enemy name="Слизень" hp="2" damage="2" attack_range="1" location="" boss="" icon="slime.png"/>

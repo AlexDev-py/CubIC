@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Рыцарь-копейщик" hp="6" damage="4" attack_range="1" location="" boss=""/>
+<enemy name="Рыцарь-копейщик" hp="6" damage="4" attack_range="1" location="" boss="" icon="knight_spearman.png"/>

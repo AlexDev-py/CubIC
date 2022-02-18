@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Стервятник" hp="2" damage="2" attack_range="1" location="desert" boss=""/>
+<enemy name="Стервятник" hp="2" damage="2" attack_range="1" location="desert" boss="" icon="vulture.png"/>

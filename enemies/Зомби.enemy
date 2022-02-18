@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<enemy name="Зомби" hp="4" damage="5" attack_range="1" location="" boss=""/>
+<enemy name="Зомби" hp="4" damage="5" attack_range="1" location="" boss="" icon="zombie.png"/>
