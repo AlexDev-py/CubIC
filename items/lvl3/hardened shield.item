@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Закаленный щит" lvl="3" price="1500" count="3" group="" icon="shield.png">
-    <desc>
-        <armor>+4</armor>
-    </desc>
-</item>

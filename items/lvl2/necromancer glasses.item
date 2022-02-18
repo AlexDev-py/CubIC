@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Очки некроманта" lvl="2" price="99" count="3" group="" icon="glasses.png">
-    <desc>
-        <armor>+1</armor>
-        <life_abduction>+1</life_abduction>
-    </desc>
-</item>

@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Ботинки" lvl="1" count="%PLAYERS%" price="50" group="boots" icon="boots.png">
-    <desc>
-        <move_speed>+1</move_speed>
-    </desc>
-</item>

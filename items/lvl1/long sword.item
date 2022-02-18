@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Длинный меч" lvl="1" price="60" count="3" icon="long_sword.png">
-    <desc>
-        <damage>+1</damage>
-        <attack_range>+1</attack_range>
-    </desc>
-</item>

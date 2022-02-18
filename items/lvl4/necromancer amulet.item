@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Амулет некроманта" lvl="4" price="1000" count="1" group="amulet" icon="amulet.png">
-    <desc>
-        <life_abduction>+5</life_abduction>
-    </desc>
-</item>

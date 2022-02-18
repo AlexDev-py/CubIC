@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Булава" lvl="3" price="1700" count="3" group="" icon="cudgel.png">
-    <desc>
-        <damage>+3</damage>
-        <armor>+2</armor>
-    </desc>
-</item>

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Сапоги вампира" lvl="2" price="99" count="4" group="" icon="vampire_boots.png">
-    <desc>
-        <move_speed>+1</move_speed>
-        <life_abduction>+1</life_abduction>
-    </desc>
-</item>

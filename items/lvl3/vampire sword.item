@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<item name="Меч вампира" lvl="3" price="1750" count="2" group="" icon="vampire_sword.png">
-    <desc>
-        <damage>+2</damage>
-        <life_abduction>+1</life_abduction>
-    </desc>
-</item>
