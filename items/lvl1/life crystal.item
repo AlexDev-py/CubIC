@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<item name="Кристалл жизни" lvl="1" price="" count="4" icon="life_crystal.png">
+<item name="Кристалл жизни" lvl="1" price="60" count="4" icon="life_crystal.png">
     <desc>
         <max_hp>+1</max_hp>
     </desc>

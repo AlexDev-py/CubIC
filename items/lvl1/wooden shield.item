@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<item name="Деревянный щит" lvl="1" price="" count="2" icon="shield.png">
+<item name="Деревянный щит" lvl="1" price="74" count="2" icon="shield.png">
     <desc>
         <armor>+2</armor>
     </desc>

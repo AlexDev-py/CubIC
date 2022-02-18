@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<item name="Старый меч" lvl="1" price="" count="8" icon="sword.png">
+<item name="Старый меч" lvl="1" price="45" count="8" icon="sword.png">
     <desc>
         <damage>+1</damage>
     </desc>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<item name="Амулет стойкости" lvl="4" price="" count="2" group="amulet" icon="amulet.png">
+<item name="Амулет стойкости" lvl="4" price="1000" count="2" group="amulet" icon="amulet.png">
     <desc>
         <armor>+5</armor>
     </desc>

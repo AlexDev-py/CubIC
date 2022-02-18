@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<item name="Закаленное копье" lvl="3" price="" count="3" group="" icon="spear.png">
+<item name="Закаленное копье" lvl="3" price="1500" count="3" group="" icon="spear.png">
     <desc>
         <damage>+3</damage>
         <attack_range>+2</attack_range>
