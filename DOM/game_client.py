@@ -1734,6 +1734,8 @@ class GameClientScreen(Group):
                 for player in self.network_client.room.players
             )
         )
+        self.network_client.on_update_enemies(callback=self.field.update_field)
+        self.network_client.on_boss_heal(callback=self.on_boss_heal)
         self.network_client.on_set_queue(callback=self.on_set_queue)
 
         # FIGHT
@@ -1863,6 +1865,27 @@ class GameClientScreen(Group):
 
     def on_hit(self, cords: list[tuple[int, int]]) -> None:
         self.field.init_hit(cords)
+
+    def on_boss_heal(self) -> None:
+        def _remove_indicator():
+            time.sleep(2)
+            self.field.boss.indicator = None
+            self.field.update_field()
+
+        self.field.boss.indicator = load_image(
+            "hp.png",
+            namespace=os.environ["UI_ICONS_PATH"],
+            size=(round(self.field.block_width), None),
+            save_ratio=True,
+        )
+        self.field.update_field()
+
+        if not self.boss_menu.hidden:
+            self.boss_menu.hp.value.__setattr__(
+                "text", str(self.network_client.room.boss.hp)
+            )
+
+        Thread(_remove_indicator).run()
 
     def on_need_choice_enemy(self, uid: int, eids: list[int]) -> None:
         icon_size = int(int(os.environ["icon_size"]) * 0.5)

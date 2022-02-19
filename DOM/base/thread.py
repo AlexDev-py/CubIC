@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 import typing as ty
@@ -18,6 +19,12 @@ from loguru import logger
 
 if ty.TYPE_CHECKING:
     from .types import Response
+
+
+def _safe_text(text: str) -> str:
+    if isinstance(text, str):
+        return re.sub(r"<(?P<obj>.*)>", r"\<\g<obj>>", text)
+    return text
 
 
 class Thread:
@@ -67,11 +74,16 @@ class Thread:
         """
         logger.opt(colors=True).trace(
             "Создано новое задание "
-            f"<y>worker</y>=<c>{worker}</c> "
-            f"<y>args</y>=<c>{args}</c> "
-            f"<y>kwargs</y>=<c>{kwargs}</c> "
-            f"<y>callback</y>=<c>{callback}</c> "
-            f"<y>repetitive</y>=<c>{repetitive}</c>"
+            "<y>worker</y>=<c>{worker}</c> "
+            "<y>args</y>=<c>{args}</c> "
+            "<y>kwargs</y>=<c>{kwargs}</c> "
+            "<y>callback</y>=<c>{callback}</c> "
+            "<y>repetitive</y>=<c>{repetitive}</c>",
+            worker=str(worker),
+            args=args,
+            kwargs=kwargs,
+            callback=str(callback),
+            repetitive=repetitive,
         )
         self.worker = worker
         self.args = args
@@ -102,7 +114,7 @@ class Thread:
                 if not worker.repetitive:
                     cls._workers.remove(worker)
                     logger.opt(colors=True).trace(
-                        f"Задание <c>{worker.worker}</c> выполнено"
+                        "Задание <c>{worker}</c> выполнено", worker=worker.worker
                     )
                 else:
                     worker._last_start = int(time.time())
@@ -114,5 +126,5 @@ class Thread:
         """
         self.__class__._workers.append(self)
         logger.opt(colors=True).trace(
-            f"Задание <c>{self.worker}</c> добавлено в очередь"
+            "Задание <c>{worker}</c> добавлено в очередь", worker=self.worker
         )

@@ -414,12 +414,31 @@ class NetworkClient:
         self.sio.on(
             "update players",
             lambda response: (
-                list(
-                    map(
-                        lambda player: self.room.update_player(player),
-                        response["players"],
-                    )
+                logger.info("Обновление списка игроков"),
+                [self.room.update_player(player) for player in response["players"]],
+                callback(),
+            ),
+        )
+
+    def on_update_enemies(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "update enemies",
+            lambda response: (
+                logger.info("Обновление списка врагов"),
+                self.room.update_enemies(response["enemies"]),
+                callback(),
+            ),
+        )
+
+    def on_boss_heal(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "boss heal",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    "<y>Босс</y> восстановил здоровье "
+                    f"<c>{response['last']}</c> -> <c>{response['boss']['hp']}</c>"
                 ),
+                self.room.update_boss(response["boss"]),
                 callback(),
             ),
         )
