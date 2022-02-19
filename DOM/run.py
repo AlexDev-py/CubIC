@@ -19,7 +19,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--ll",
-    default="TRACE",
+    default="DEBUG",
     type=str,
     choices=["TRACE", "DEBUG", "INFO"],
     help="Уровень логирования",
@@ -62,14 +62,16 @@ os.environ["CUBE_PATH"] = os.path.join(os.environ["APP_DIR"], "cube")
 # Шрифт
 os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
-os.environ["VERSION"] = "0.0.0"
+os.environ["VERSION"] = "1.0.0-alpha.1"
 # Уровень логирования
 os.environ["LOGGING_LEVEL"] = args.ll
 # Сервер
 # os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
 os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
 
-pygame = __import__("pygame")
+# pygame = __import__("pygame")
+import pygame  # noqa
+
 pygame.init()
 
 info = pygame.display.Info()
@@ -77,9 +79,17 @@ info = pygame.display.Info()
 # TODO: Сделать экран загрузки перехода из меню клиента в игровой клиент
 os.environ["MAX_RESOLUTION"] = f"{info.current_w};{info.current_h}"
 
-logger = __import__("logger").logger
-__import__("database").Config.init()
-__import__("main").main()
+from logger import logger  # noqa
+
+# logger = __import__("logger").logger
+import database  # noqa
+
+database.Config.init()
+import main  # noqa
+
+main.main()
+# __import__("database").Config.init()
+# __import__("main").main()
 
 pygame.quit()
 

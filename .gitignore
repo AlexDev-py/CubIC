@@ -4,3 +4,5 @@ __pycache__/
 DOM AppData.lnk
 
 /DOM/run__.py
+/build/DOM/
+/build/temp/
