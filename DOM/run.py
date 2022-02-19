@@ -69,7 +69,6 @@ os.environ["LOGGING_LEVEL"] = args.ll
 # os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
 os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
 
-# pygame = __import__("pygame")
 import pygame  # noqa
 
 pygame.init()
@@ -81,15 +80,12 @@ os.environ["MAX_RESOLUTION"] = f"{info.current_w};{info.current_h}"
 
 from logger import logger  # noqa
 
-# logger = __import__("logger").logger
 import database  # noqa
 
 database.Config.init()
 import main  # noqa
 
 main.main()
-# __import__("database").Config.init()
-# __import__("main").main()
 
 pygame.quit()
 
