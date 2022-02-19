@@ -443,6 +443,17 @@ class NetworkClient:
             ),
         )
 
+    def on_game_over(self, callback: ty.Callable[[], ...]) -> None:
+        self.sio.on(
+            "game over",
+            lambda *response: (
+                logger.info("Игра окончена"),
+                self.sio.handlers.clear(),
+                self.__setattr__("room", ...),
+                callback(),
+            ),
+        )
+
     # === ITEMS ===
 
     def buy_item(self, item_index: int, fail_callback: ty.Callable[[str], ...]) -> None:
@@ -640,6 +651,19 @@ class NetworkClient:
                 ),
                 self.room.update_player(response["player"]),
                 callback(self.room.get_by_uid(response["uid"])),
+            ),
+        )
+
+    def on_kill_player(self, callback: ty.Callable[[Player], ...]) -> None:
+        self.sio.on(
+            "kill player",
+            lambda response: (
+                logger.opt(colors=True).info(
+                    f"Игрок <y>{response['player']['username']}</y> погиб"
+                ),
+                self.room.update_player(response["player"]),
+                callback(self.room.get_by_uid(response["uid"])),
+                self.next(),
             ),
         )
 

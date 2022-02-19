@@ -600,6 +600,8 @@ class Social(WidgetsGroup):
         Обновляет список друзей.
         """
         self.network_client.update_user()  # Обновляем данные о текущем пользователе
+        self.user_widget.status.text = self.network_client.user.status.text
+        self.user_widget.status.color = self.network_client.user.status.color
 
         logger.opt(colors=True).trace(
             f"Обновление списка друзей: <y>{self.network_client.user.friends}</y>"

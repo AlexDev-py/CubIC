@@ -35,6 +35,61 @@ if ty.TYPE_CHECKING:
 # ==== MENUS ====
 
 
+class GameOverAlert(Alert):
+    def __init__(self, parent: GameClientScreen):
+        """
+        Меню окончания игры.
+        :param parent: ...
+        """
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(GameOverAlert, self).__init__(
+            parent,
+            "Menu",
+            parent_size=resolution,
+            width=int(resolution.width * 0.5),
+            padding=20,
+            background=pg.Color("black"),
+            border_color=pg.Color("red"),
+            border_width=3,
+            fogging=100,
+        )
+
+        self.title = Label(
+            self,
+            f"{self.name}-TitleLabel",
+            x=0,
+            y=0,
+            width=self.rect.width,
+            text="Ира окончена",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+            anchor=Anchor.center,
+        )
+
+        self.exit_button = Button(
+            self,
+            f"{self.name}-ExitButton",
+            x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
+            y=self.title.rect.bottom + 10,
+            width=int(self.rect.width * 0.8),
+            text="Выйти",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("gray"),
+            font=pg.font.Font(font, font_size),
+            anchor=Anchor.center,
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: (
+                parent.__setattr__("finish_status", FinishStatus.exit_game),
+                parent.terminate(),
+            ),
+        )
+
+
 class EscMenu(Alert):
     def __init__(self, parent: GameClientScreen):
         """
@@ -1636,7 +1691,7 @@ class GameClientScreen(Group):
         )
 
         # Если выставлено максимально возможное разрешение, открываем окно в полный экран
-        if not hasattr(self, "screen"):
+        if not hasattr(self, "screen") or resolution != pg.display.get_window_size():
             if resolution >= Resolution.converter(os.environ["MAX_RESOLUTION"]):
                 self.screen = pg.display.set_mode(resolution, pg.FULLSCREEN)
             else:
@@ -1691,6 +1746,7 @@ class GameClientScreen(Group):
             parent_size=resolution,
             width=int(resolution.width * 0.7),
         )
+        self.game_over_alert = GameOverAlert(self)
 
         self.network_client.on_leaving_the_lobby(
             callback=lambda msg: (
@@ -1699,7 +1755,13 @@ class GameClientScreen(Group):
                 self.field.update_field(),
             )
         )
+        self.network_client.on_loading_game(
+            callback=lambda: self.loading_screen.show_message(
+                "Переход на новый уровень"
+            )
+        )
         self.network_client.on_start_game(callback=self.on_start_game)
+        self.network_client.on_game_over(callback=self.game_over_alert.show)
 
         # ITEMS
         self.network_client.on_buying_an_item(
@@ -1743,6 +1805,7 @@ class GameClientScreen(Group):
 
         # HITS
         self.network_client.on_hit_player(callback=self.update_player)
+        self.network_client.on_kill_player(callback=self.on_kill_player)
         self.network_client.on_hit_enemy(
             callback=lambda enemy: (
                 self.field.update_field(),
@@ -1866,6 +1929,18 @@ class GameClientScreen(Group):
     def on_hit(self, cords: list[tuple[int, int]]) -> None:
         self.field.init_hit(cords)
 
+    def on_kill_player(self, player: Player) -> None:
+        self.update_player(player)
+
+        for pos, character_widget in self.field.characters.items():
+            if character_widget.data.uid == player.uid:
+                character_widget.indicator = load_image(
+                    "hp.png",
+                    namespace=os.environ["UI_ICONS_PATH"],
+                    size=(round(self.field.block_height), None),
+                    save_ratio=True,
+                )
+
     def on_boss_heal(self) -> None:
         def _remove_indicator():
             time.sleep(2)
@@ -1930,6 +2005,9 @@ class GameClientScreen(Group):
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(GameClientScreen, self).handle_event(event)
+        if self.network_client.room is ...:
+            return
+
         if self.enabled:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
