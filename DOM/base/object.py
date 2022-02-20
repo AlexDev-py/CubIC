@@ -145,7 +145,9 @@ class Object(ABC):
         """
         # Если это 1 из атрибутов объекта
         if key in self.__dict__ and key in FIELDS:
-            logger.opt(colors=True).trace(f"{self} <le>{key}</le>=<y>{value}</y>")
+            logger.opt(colors=True).trace(
+                "{self} <le>{key}</le>=<y>{value}</y>", self=self, key=key, value=value
+            )
             super(Object, self).__setattr__(key, value)
             (self.parent or self).update()
             return

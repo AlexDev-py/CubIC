@@ -11,6 +11,7 @@ import typing as ty
 
 import pygame as pg
 
+from app_info_alert import AppInfoAlert
 from base import Button, WidgetsGroup, Group
 from base.events import ButtonClickEvent
 from database.field_types import Resolution
@@ -94,6 +95,8 @@ class MenuScreen(Group):
     def __init__(self, network_client: NetworkClient = None):
         resolution = Resolution.converter(os.environ["resolution"])
         Settings.init_interface_size()
+        font_size = int(os.environ.get("font_size"))
+        font = os.environ.get("font")
 
         super(MenuScreen, self).__init__(name="MenuScreen")
 
@@ -110,10 +113,25 @@ class MenuScreen(Group):
         else:
             self.screen = pg.display.set_mode(resolution)
 
+        self.app_info_button = Button(
+            self,
+            x=20,
+            y=20,
+            text=" i",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("#171717"),
+            font=pg.font.Font(font, font_size),
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: self.app_info_alert.show(),
+        )
+
         self.buttons = MenuButtons(self)
         self.lobby = Lobby(self, self.network_client)
         self.social = Social(self, self.network_client)
         self.setting = Settings(self)
+        self.app_info_alert = AppInfoAlert(self)
 
         self.info_alert = InfoAlert(
             self,
