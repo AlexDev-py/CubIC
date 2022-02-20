@@ -21,13 +21,13 @@ with open(r"DOM\run.py", "w", encoding="utf-8") as file:
     file.write(text)
 
 # Изменяем версию в установщике
-# with open("installer.nsi") as file:
-#     text = file.read()
-# text = re.sub(
-#     r'!define PRODUCT_VERSION ".+"', f'!define PRODUCT_VERSION "{__version__}"', text
-# )
-# with open("installer.nsi", "w") as file:
-#     file.write(text)
+with open("installer.nsi") as file:
+    text = file.read()
+text = re.sub(
+    r'!define PRODUCT_VERSION ".+"', f'!define PRODUCT_VERSION "{__version__}"', text
+)
+with open("installer.nsi", "w") as file:
+    file.write(text)
 
 
 PyInstaller.__main__.run(

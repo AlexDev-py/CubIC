@@ -7,6 +7,7 @@
 
 import argparse
 import os
+import sys
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
@@ -24,6 +25,11 @@ parser.add_argument(
     choices=["TRACE", "DEBUG", "INFO"],
     help="Уровень логирования",
 )
+parser.add_argument(
+    "--clear-appdata",
+    action="store_true",
+)
+
 args = parser.parse_args()
 
 # CONFIG SETUP
@@ -68,6 +74,11 @@ os.environ["LOGGING_LEVEL"] = args.ll
 # Сервер
 # os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
 os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
+
+if args.clear_appdata:
+    import clear_appdata  # noqa
+
+    sys.exit()
 
 import pygame  # noqa
 

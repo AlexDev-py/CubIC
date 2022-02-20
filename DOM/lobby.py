@@ -307,6 +307,8 @@ class CharactersMenu(WidgetsGroup):
         )
 
         self.characters = []
+        if not len(characters):
+            __import__("game").character.init()
         for i, character in enumerate(characters):
             self.characters.append(
                 CharacterButton(
