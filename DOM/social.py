@@ -569,7 +569,8 @@ class Social(WidgetsGroup):
                 user=user,
             )
         )  # Добавляем виджет друга
-        self.parent.update()
+        self.add(self.friends[-1])
+        # self.parent.update()
 
     def on_change_user_status(self, user: User) -> None:
         """
