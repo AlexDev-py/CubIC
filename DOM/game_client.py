@@ -338,18 +338,19 @@ class Field(WidgetsGroup):
         )
 
         self._boss_image = load_image(
-            "diablo.png",
+            self.network_client.room.boss.icon,
             namespace=os.environ["BOSSES_PATH"],
             size=(None, round(self.block_height * 2)),
             save_ratio=True,
         )
-
-        self._enemy_image = load_image(
-            "mogus.png",
-            namespace=os.environ["ENEMIES_PATH"],
-            size=(None, round(self.block_height * 1.25)),
-            save_ratio=True,
-        )
+        if self._boss_image.get_width() == 1:
+            # TODO: remove this
+            self._boss_image = load_image(
+                "diablo.png",
+                namespace=os.environ["BOSSES_PATH"],
+                size=(None, round(self.block_height * 2)),
+                save_ratio=True,
+            )
 
         self.boss: BossWidget = ...
         self.enemies: dict[Cord, EnemyWidget] = {}
@@ -503,15 +504,28 @@ class Field(WidgetsGroup):
         enemies = {enemy.data.eid: enemy for enemy in self.enemies.values()}
         self.enemies.clear()
         for enemy in self.network_client.room.enemies:
+            enemy_image = load_image(
+                enemy.icon,
+                namespace=os.environ["ENEMIES_PATH"],
+                size=(None, round(self.block_height * 1.25)),
+                save_ratio=True,
+            )
+            if enemy_image.get_width() == 1:
+                enemy_image = load_image(
+                    "mogus.png",
+                    namespace=os.environ["ENEMIES_PATH"],
+                    size=(None, round(self.block_height * 1.25)),
+                    save_ratio=True,
+                )
             rect = pg.Rect(
                 self.block_width * enemy.pos[1]
-                - ((self._enemy_image.get_width() - self.block_width) / 2),
+                - ((enemy_image.get_width() - self.block_width) / 2),
                 self.block_height * enemy.pos[0] - self.block_width * 0.25,
-                self._enemy_image.get_width(),
-                self._enemy_image.get_height(),
+                enemy_image.get_width(),
+                enemy_image.get_height(),
             )
             if enemy.eid not in enemies:
-                enemy_widget = EnemyWidget(self._enemy_image, rect=rect, data=enemy)
+                enemy_widget = EnemyWidget(enemy_image, rect=rect, data=enemy)
             else:
                 enemy_widget = enemies[enemy.eid]
                 enemy_widget.rect = rect

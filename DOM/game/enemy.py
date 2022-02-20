@@ -10,3 +10,4 @@ class Enemy:
     attack_range: int
     reward: int
     pos: tuple[int, int]
+    icon: str
