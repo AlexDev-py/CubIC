@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import time
 import typing as ty
@@ -1586,9 +1587,8 @@ class ShopMenu(WidgetsGroup):
         icon_size = int(int(os.environ["icon_size"]))
 
         # Кол-во предметов в строке
-        in_line_count = len(self.network_client.room.players)
-        if len(self.network_client.room.players) == 4:
-            in_line_count = 3
+        k = 3 if len(self.network_client.room.players) < 4 else 4
+        in_line_count = math.ceil(len(self.network_client.room.shop) / k)
         width = int((self.rect.width - self.padding * 2) / in_line_count)
         while width < icon_size * 2:
             in_line_count -= 1
