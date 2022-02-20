@@ -107,7 +107,7 @@ class StartAppScreen(Group):
                     self.status.text = "Сервер недоступен\nПопробуйте позже"
                 time.sleep(5)
 
-        self.check_files()
+        # self.check_files()
 
         self.finish_status = FinishStatus.auth_failed
         if os.path.isfile(os.environ["AUTH_PATH"]):

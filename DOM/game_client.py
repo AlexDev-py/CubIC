@@ -52,8 +52,8 @@ class GameOverAlert(Alert):
             parent_size=resolution,
             width=int(resolution.width * 0.5),
             padding=20,
-            background=pg.Color("black"),
-            border_color=pg.Color("red"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
             border_width=3,
             fogging=100,
         )
@@ -65,7 +65,6 @@ class GameOverAlert(Alert):
             y=0,
             width=self.rect.width,
             text="Игра окончена",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
         )
@@ -78,11 +77,9 @@ class GameOverAlert(Alert):
             width=int(self.rect.width * 0.8),
             text="Выйти",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("gray"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: (
                 parent.__setattr__("finish_status", FinishStatus.exit_game),
@@ -108,8 +105,8 @@ class EscMenu(Alert):
             parent_size=resolution,
             width=int(resolution.width * 0.5),
             padding=20,
-            background=pg.Color("black"),
-            border_color=pg.Color("red"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
             border_width=3,
             fogging=100,
         )
@@ -121,7 +118,6 @@ class EscMenu(Alert):
             y=0,
             width=self.rect.width,
             text="Меню",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
         )
@@ -134,11 +130,9 @@ class EscMenu(Alert):
             width=int(self.rect.width * 0.8),
             text="Продолжить",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("gray"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
@@ -151,11 +145,9 @@ class EscMenu(Alert):
             width=int(self.rect.width * 0.8),
             text="Настройки",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("gray"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.settings.show(),
         )
@@ -168,11 +160,9 @@ class EscMenu(Alert):
             width=int(self.rect.width * 0.8),
             text="Выйти",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("gray"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: (
                 parent.network_client.leave_lobby(),
@@ -198,8 +188,8 @@ class ItemDropMenu(DropMenu):
             parent,
             f"{parent.name}-DropMenu",
             padding=10,
-            background=pg.Color("gray"),
-            border_color=pg.Color("red"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
             border_width=2,
         )
 
@@ -220,11 +210,9 @@ class ItemDropMenu(DropMenu):
                 - self.border_width * 2,
                 text="Продать",
                 padding=5,
-                color=pg.Color("red"),
                 active_background=pg.Color("gray"),
                 font=pg.font.Font(font, font_size),
                 anchor=Anchor.center,
-                border_color=pg.Color("red"),
                 border_width=2,
                 callback=lambda event: (
                     self.hide(),
@@ -648,7 +636,6 @@ class StatWidget(WidgetsGroup):
             x=self.icon.rect.right + 5,
             y=lambda obj: self.icon.height / 2 - obj.rect.height / 2,
             text=value,
-            color=pg.Color("red"),
             font=pg.font.Font(font, icon_size),
         )
 
@@ -965,7 +952,6 @@ class ItemDescription(WidgetsGroup):
                 else None
             ),
             text=item.name,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             **dict(soft_split=True) if parent.width else {},
         )
@@ -976,7 +962,6 @@ class ItemDescription(WidgetsGroup):
             x=0,
             y=self.icon.rect.bottom + 5,
             text=f"Цена: {item.price}",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
         self.price_icon_label = Label(
@@ -1078,7 +1063,7 @@ class ShortPlayerWidget(WidgetsGroup):
             color=(
                 pg.Color("#20478a")
                 if f"p{player.uid}" == parent.network_client.room.queue
-                else pg.Color("red")
+                else pg.Color("white")
             ),
             font=pg.font.Font(font, font_size),
         )
@@ -1112,11 +1097,7 @@ class PlayerWidget(WidgetsGroup):
 
         # Определяем положение виджета
         super(PlayerWidget, self).__init__(
-            parent,
-            f"Player-Widget",
-            x=0,
-            y=y,
-            width=width,
+            parent, f"Player-Widget", x=0, y=y, width=width, padding=10
         )
 
         self.icon = Label(
@@ -1135,7 +1116,6 @@ class PlayerWidget(WidgetsGroup):
             x=lambda obj: self.icon.rect.right + 5,
             y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
             text="",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -1143,9 +1123,8 @@ class PlayerWidget(WidgetsGroup):
             self,
             x=0,
             y=lambda obj: self.icon.rect.bottom + 5,
-            width=self.rect.width,
+            width=self.rect.width - self.padding * 2,
             height=2,
-            color=pg.Color("red"),
         )  # Линия - разделитель
 
         self.items: ItemsWidget = ...
@@ -1305,7 +1284,6 @@ class EnemyMenu(WidgetsGroup):
             x=lambda obj: self.icon.rect.right + 5,
             y=lambda obj: round(self.icon.rect.height / 2 - obj.rect.height / 2),
             text="...",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -1378,7 +1356,6 @@ class BossSkill(WidgetsGroup):
             y=0,
             width=round(width * 0.8),
             text=f"{index}. " + (skill.get("desc") or ""),
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             soft_split=True,
         )
@@ -1453,7 +1430,6 @@ class BossMenu(WidgetsGroup):
             x=lambda obj: self.icon.rect.right + 5,
             y=lambda obj: round(self.icon.rect.height / 2 - obj.rect.height / 2),
             text="...",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -1549,7 +1525,7 @@ class ShopMenu(WidgetsGroup):
             self,
             f"{self.name}-ItemPreview",
             x=0,
-            y=lambda obj: round(self.rect.bottom - obj.rect.height),
+            y=lambda obj: round(self.rect.bottom - obj.rect.height - 10),
             width=self.width - self.padding * 2,
             padding=10,
             hidden=True,
@@ -1568,11 +1544,9 @@ class ShopMenu(WidgetsGroup):
             width=self.item_preview.rect.width - self.item_preview.padding * 2,
             text="Купить",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("gray"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
-            border_color=pg.Color("red"),
             border_width=2,
         )
 
@@ -1644,24 +1618,28 @@ class ShopMenu(WidgetsGroup):
 class DicesWidget(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
 
+        # TODO: Кости от скорости перекручиваются
+        # TODO: Адаптация остального интерфейса через 3\70
         super(DicesWidget, self).__init__(
             parent,
             f"{parent.name}-DicesWidget",
             x=0,
-            y=lambda obj: parent.pass_move_button.rect.top - obj.rect.height - 5,
+            y=lambda obj: parent.pass_move_button.rect.top
+            - obj.rect.height
+            - parent.field.rect.left / 70 * 3,
             width=parent.field.rect.left,
-            padding=10,
         )
 
         self.dice = Dice(
             self,
             f"{self.name}-DefaultDice",
             # Оборот на 180 градусов за пол секунды
-            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 4,
+            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 6,
             x=lambda obj: round(
-                (self.width - self.padding * 2) / 2
+                self.rect.w / 70 * 3
+                + (self.rect.width - self.rect.w / 70 * 3) / 2
                 - obj.rect.width
-                - obj.rect.width / 5
+                - 15
             ),
             y=0,
             width=round(parent.field.rect.left / 3),
@@ -1671,10 +1649,8 @@ class DicesWidget(WidgetsGroup):
         self.dice2 = Dice(
             self,
             f"{self.name}-AttackDice",
-            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 4,
-            x=lambda obj: (self.width - self.padding * 2)
-            - obj.rect.width
-            - self.dice.rect.x,
+            speed=lambda obj: obj.rect.width / parent.clock.get_fps() * 6,
+            x=lambda obj: self.dice.rect.right + 30,
             y=0,
             width=round(parent.field.rect.left / 3),
             files_namespace=os.path.join(os.environ["CUBE_PATH"], "fight"),
@@ -1723,17 +1699,19 @@ class GameClientScreen(Group):
         self.pass_move_button = Button(
             self,
             f"{self.name}-PassMoveButton",
-            x=10,
-            y=lambda obj: resolution.height - obj.rect.height - 10,
+            x=self.field.rect.left / 70 * 3,
+            y=lambda obj: (
+                resolution.height
+                - self.field.rect.left / 70 * 3
+                - obj.rect.height
+                - self.field.rect.left / 70 * 3 / 3
+            ),
             width=self.field.rect.left - 20,
             text="Пропустить ход",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("gray"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
-            border_color=pg.Color("red"),
-            border_width=3,
             callback=lambda ev: self.network_client.pass_move(
                 self.info_alert.show_message
             ),
@@ -1870,6 +1848,19 @@ class GameClientScreen(Group):
             del self.__dict__["eids"]
 
         self.loading_screen.hide()
+
+        self._left_menu_image = load_image(
+            "left_menu.png", size=(None, resolution.height), save_ratio=True
+        )
+        self._left_menu_rect = pg.Rect(0, 0, *self._left_menu_image.get_size())
+        self._right_menu_image = load_image(
+            "right_menu.png", size=(None, resolution.height), save_ratio=True
+        )
+        self._right_menu_rect = pg.Rect(
+            resolution.width - self._right_menu_image.get_width(),
+            0,
+            *self._right_menu_image.get_size(),
+        )
 
     def on_start_game(self) -> None:
         self.__init__()
@@ -2010,6 +2001,10 @@ class GameClientScreen(Group):
 
     def render(self) -> None:
         self.screen.fill("#f0f0f0")
+
+        self.screen.blit(self._left_menu_image, self._left_menu_rect)
+        self.screen.blit(self._right_menu_image, self._right_menu_rect)
+
         self.draw(self.screen)
 
         pg.display.flip()

@@ -108,10 +108,10 @@ class Dice(BaseWidget):
 
     def _re_corners(self) -> None:
         ul, ur, dl, dr = (
-            [0, 0],
-            [self.width, 0],
-            [0, self.width],
-            [self.width, self.width],
+            [10, 10],
+            [self.width + 10, 10],
+            [10, self.width + 10],
+            [self.width + 10, self.width + 10],
         )
         self.all_corners = [
             [ul.copy(), dl.copy(), dr.copy(), ur.copy()],
@@ -265,22 +265,6 @@ class Dice(BaseWidget):
                 self.in_move = False
                 DiceMovingStop(self).post()
 
-    def random_moving(self, k: int | None = None) -> None:
-        moving = self.algorithm.roll(k)
-        print(moving)
-        for i in moving:
-            self.move_stack.append(
-                [
-                    [
-                        [True, False, False, False],
-                        [False, True, False, False],
-                        [False, False, True, False],
-                        [False, False, False, True],
-                    ][i[0]],
-                    i[1],
-                ]
-            )
-
     def move_from_list(self, data: list[tuple[int, int]]) -> None:
         """
         Вращение кости по данным с сервера.
@@ -310,7 +294,7 @@ class Dice(BaseWidget):
             self.move_up()
 
     def _get_rect(self) -> pg.Rect:
-        self.rect = pg.Rect(0, 0, self.width, self.width)
+        self.rect = pg.Rect(0, 0, self.width + 20, self.width + 20)
         self.rect.x, self.rect.y = self.x, self.y
         return self.rect
 
