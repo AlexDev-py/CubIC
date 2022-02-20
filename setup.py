@@ -42,6 +42,7 @@ PyInstaller.__main__.run(
         "--specpath=build/sources",
         "-y",
         "--clean",
+        # "--onefile",
     ]
 )
 
