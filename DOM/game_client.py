@@ -63,7 +63,7 @@ class GameOverAlert(Alert):
             x=0,
             y=0,
             width=self.rect.width,
-            text="Ира окончена",
+            text="Игра окончена",
             color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,

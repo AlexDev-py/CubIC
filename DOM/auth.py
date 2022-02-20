@@ -129,7 +129,10 @@ class Login(WidgetsGroup):
             username=login,
             password=password,
             success_callback=lambda: parent.auth(login, password),
-            fail_callback=lambda msg: (parent.error_alert.show_message(msg)),
+            fail_callback=lambda msg: (
+                self.enable(),
+                parent.error_alert.show_message(msg),
+            ),
         )
 
 
@@ -264,7 +267,10 @@ class Signup(WidgetsGroup):
             username=login,
             password=password,
             success_callback=lambda: parent.auth(login, password),
-            fail_callback=lambda msg: (parent.error_alert.show_message(msg)),
+            fail_callback=lambda msg: (
+                self.enable(),
+                parent.error_alert.show_message(msg),
+            ),
         )
 
 

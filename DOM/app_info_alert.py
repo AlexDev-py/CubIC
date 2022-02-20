@@ -39,9 +39,9 @@ class MemberWidget(WidgetsGroup):
             x=0,
             y=0,
             text=name,
-            color=pg.Color("#f72a42") if site else pg.Color("red"),
+            color=(pg.Color("#f72a42") if site else pg.Color("red")),
             font=pg.font.Font(font, font_size),
-            callback=lambda event: webbrowser.open_new_tab(site) if site else ...,
+            callback=lambda event: (webbrowser.open_new_tab(site) if site else ...),
         )
 
         self.role_label = Label(
@@ -124,29 +124,43 @@ class AppInfoAlert(Alert):
             self,
             self.icon_label.rect.bottom + 30,
             "Программист",
-            "AlexDev",
+            'Алексей "AlexDev"',
             "https://github.com/AlexDev-py",
         )
         self.victory05 = MemberWidget(
             self,
             self.alex_dev.rect.bottom + 10,
             "Программист",
-            "VIctory05",
+            'Александр "VIctory05"',
             "https://github.com/VIctory05",
         )
         self.qvert = MemberWidget(
             self,
             self.victory05.rect.bottom + 10,
             "Программист",
-            "Qvert",
+            'Глеб "Qvert"',
             "https://github.com/Qvert",
+        )
+        self.konan = MemberWidget(
+            self,
+            self.qvert.rect.bottom + 10,
+            "Дизайнер",
+            'Артур "konan"',
+            "https://discord.com/users/384262096839376898",
+        )
+        self.wyvverna = MemberWidget(
+            self,
+            self.konan.rect.bottom + 10,
+            "Гейм дизайнер",
+            'Илья "Wyvverna"',
+            "https://discord.com/users/800106614383575050",
         )
 
         self.project_link_button = Button(
             self,
             f"{self.name}-ProjectLinkButton",
             x=0,
-            y=0,
+            y=self.wyvverna.rect.bottom + 30,
             text="Страница проекта",
             color=pg.Color("#f72a42"),
             font=pg.font.Font(font, font_size),

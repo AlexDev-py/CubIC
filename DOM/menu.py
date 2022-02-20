@@ -12,7 +12,7 @@ import typing as ty
 import pygame as pg
 
 from app_info_alert import AppInfoAlert
-from base import Button, WidgetsGroup, Group
+from base import Button, WidgetsGroup, Group, Alert, Label
 from base.events import ButtonClickEvent
 from database.field_types import Resolution
 from lobby import Lobby, LobbyInvite
@@ -22,6 +22,86 @@ from utils import InfoAlert, LoadingAlert, FinishStatus, load_image
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
+
+
+class ExitAlert(Alert):
+    def __init__(self, parent: MenuScreen):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ.get("font_size"))
+        font = os.environ.get("font")
+
+        super(ExitAlert, self).__init__(
+            parent,
+            "ExitAlert",
+            parent_size=resolution,
+            padding=20,
+            background=pg.Color("black"),
+            border_color=pg.Color("red"),
+            border_width=3,
+        )
+
+        self.title = Label(
+            self,
+            f"{self.name}-TitleLabel",
+            x=lambda obj: round(
+                (self.rect.width - self.padding * 2) / 2 - obj.rect.width / 2
+            ),
+            y=0,
+            text="Выход",
+            color=pg.Color("red"),
+            font=pg.font.Font(font, font_size),
+        )
+
+        self.cancel_button = Button(
+            self,
+            f"{self.name}-CancelButton",
+            x=0,
+            y=0,
+            text=" X ",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("#171717"),
+            font=pg.font.Font(font, int(font_size * 0.7)),
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: self.hide(),
+        )
+
+        self.exit_akk = Button(
+            self,
+            x=0,
+            y=self.title.rect.bottom + 20,
+            text="Выйти из аккаунта",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("#171717"),
+            font=pg.font.Font(font, font_size),
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: (
+                parent.terminate(),
+                os.remove(os.environ["AUTH_PATH"])
+                if os.path.isfile(os.environ["AUTH_PATH"])
+                else ...,
+            ),
+        )
+
+        self.exit_game = Button(
+            self,
+            x=self.exit_akk.rect.right + 5,
+            y=self.title.rect.bottom + 20,
+            width=self.exit_akk.rect.width,
+            text="Выйти из игры",
+            padding=5,
+            color=pg.Color("red"),
+            active_background=pg.Color("#171717"),
+            font=pg.font.Font(font, font_size),
+            border_color=pg.Color("red"),
+            border_width=2,
+            callback=lambda event: parent.terminate(),
+        )
+
+        self.update()
 
 
 class MenuButtons(WidgetsGroup):
@@ -87,7 +167,7 @@ class MenuButtons(WidgetsGroup):
                 size=(None, buttons_size),
                 save_ratio=True,
             ),
-            callback=lambda event: parent.terminate(),
+            callback=lambda event: parent.exit_alert.show(),
         )
 
 
@@ -132,6 +212,7 @@ class MenuScreen(Group):
         self.social = Social(self, self.network_client)
         self.setting = Settings(self)
         self.app_info_alert = AppInfoAlert(self)
+        self.exit_alert = ExitAlert(self)
 
         self.info_alert = InfoAlert(
             self,
@@ -189,6 +270,8 @@ class MenuScreen(Group):
         """
         self.buttons.hide(),
         self.buttons.disable(),
+        self.app_info_button.disable()
+        self.app_info_button.hide()
         self.lobby.init(),
         self.lobby.show(),
         self.lobby.enable(),
@@ -223,6 +306,8 @@ class MenuScreen(Group):
                             self.lobby.hide()
                             self.buttons.show()
                             self.buttons.enable()
+                            self.app_info_button.enable()
+                            self.app_info_button.show()
 
                 self.handle_event(event)
             self.render()

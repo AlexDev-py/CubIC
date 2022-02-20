@@ -118,7 +118,9 @@ def load_image(
     # Путь к файлу(если namespace не указан, файл ищется в директории приложения)
     path = os.path.join(namespace or os.environ["APP_DIR"], file_name)
     if not os.path.isfile(path):
-        logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
+        if path not in _images_cash:
+            _images_cash[path] = None
+            logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
         # Возвращаем пустое изображение
         return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
 
