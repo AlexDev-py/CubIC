@@ -7,3 +7,4 @@ class Boss:
     hp: int
     pos: list[int, int]
     desc: list[dict]
+    icon: str
