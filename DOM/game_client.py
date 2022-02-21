@@ -1075,6 +1075,7 @@ class PlayerWidget(WidgetsGroup):
         parent: Group,
         network_client: NetworkClient,
         width: int,
+        x: int | CordFunction,
         y: int | CordFunction,
         player: Player | None = None,
         can_remove_items: True | False = False,
@@ -1097,7 +1098,7 @@ class PlayerWidget(WidgetsGroup):
 
         # Определяем положение виджета
         super(PlayerWidget, self).__init__(
-            parent, f"Player-Widget", x=0, y=y, width=width, padding=10
+            parent, f"Player-Widget", x=x, y=y, width=width
         )
 
         self.icon = Label(
@@ -1163,7 +1164,8 @@ class PlayerWidget(WidgetsGroup):
             self.stats = StatsWidget(self)
         else:
             self.items.update_items(self.player)
-            self.stats.update_stats(self.player)
+            self.remove(self.stats)
+            self.stats = StatsWidget(self)
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(PlayerWidget, self).handle_event(event)
@@ -1201,9 +1203,9 @@ class PlayersMenu(WidgetsGroup):
         super(PlayersMenu, self).__init__(
             parent,
             "PlayersMenu",
-            x=0,
-            y=0,
-            width=parent.field.rect.left,
+            x=lambda obj: parent.field.rect.left / 70 * 5,
+            y=lambda obj: parent.field.rect.left / 70 * 4,
+            width=parent.field.rect.left - parent.field.rect.left / 70 * 5,
             height=resolution.height,
             padding=5,
         )
@@ -1212,6 +1214,7 @@ class PlayersMenu(WidgetsGroup):
             self,
             parent.network_client,
             width=self.width - self.padding * 2,
+            x=0,
             y=0,
             player=self.network_client.room.get_by_uid(self.network_client.user.uid),
             can_remove_items=True,
@@ -1260,9 +1263,13 @@ class EnemyMenu(WidgetsGroup):
         super(EnemyMenu, self).__init__(
             parent,
             "EnemyMenu",
-            x=0,
-            y=lambda obj: round(parent.dices_widget.rect.top - obj.rect.height - 10),
-            width=parent.field.rect.left,
+            x=lambda obj: parent.field.rect.left / 70 * 5,
+            y=lambda obj: round(
+                parent.dices_widget.rect.top
+                - obj.rect.height
+                - parent.field.rect.left / 70 * 2
+            ),
+            width=parent.field.rect.left - parent.field.rect.left / 70 * 5,
             padding=10,
             hidden=True,
         )
@@ -1382,7 +1389,7 @@ class BossSkill(WidgetsGroup):
         """
         if not len(self.stats):  # Если это первая характеристика
             y = 0
-            x = self.desc.rect.right + 5
+            x = self.desc._rendered_text.get_width() + 5  # noqa
         else:
             y = self.stats[-1].rect.y
             x = self.stats[-1].rect.right
@@ -1400,16 +1407,20 @@ class BossSkill(WidgetsGroup):
 
 class BossMenu(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
+        icon_size = int(os.environ["icon_size"])
         font_size = int(os.environ["font_size"])
         font = os.environ.get("font")
 
         super(BossMenu, self).__init__(
             parent,
             "BossMenu",
-            x=0,
-            y=lambda obj: round(parent.dices_widget.rect.top - obj.rect.height - 10),
-            width=parent.field.rect.left,
-            padding=10,
+            x=lambda obj: parent.field.rect.left / 70 * 5,
+            y=lambda obj: round(
+                parent.dices_widget.rect.top
+                - obj.rect.height
+                - parent.field.rect.left / 70 * 2
+            ),
+            width=parent.field.rect.left - parent.field.rect.left / 70 * 5,
             hidden=True,
         )
         self.disable()
@@ -1424,11 +1435,12 @@ class BossMenu(WidgetsGroup):
             text="",
         )
 
-        self.name = Label(
+        self.name = Text(
             self,
             f"{self.name}-NameLabel",
             x=lambda obj: self.icon.rect.right + 5,
             y=lambda obj: round(self.icon.rect.height / 2 - obj.rect.height / 2),
+            width=round(self.rect.width - icon_size * 1.5),
             text="...",
             font=pg.font.Font(font, font_size),
         )
@@ -1509,9 +1521,10 @@ class ShopMenu(WidgetsGroup):
             "ShopMenu",
             x=parent.field.rect.right,
             y=0,
-            width=resolution.width - parent.field.rect.right,
+            width=resolution.width
+            - parent.field.rect.right
+            - parent.field.rect.left / 70 * 4,
             height=resolution.height,
-            padding=5,
         )
 
         self.items: list[ItemStand] = []  # Предметы
@@ -1520,35 +1533,42 @@ class ShopMenu(WidgetsGroup):
 
         self.add(*self.items)
 
+        self.buy_button = Button(
+            self,
+            name=f"{self.name}-BuyButton",
+            x=parent.field.rect.left / 70,
+            y=lambda obj: (
+                resolution.height
+                - parent.field.rect.left / 70 * 3
+                - obj.rect.height
+                - parent.field.rect.left / 70 * 3 / 3
+            ),
+            width=parent.field.rect.left - parent.field.rect.left / 70 * 5,
+            text="Купить",
+            padding=5,
+            active_background=pg.Color(222, 222, 222, 100),
+            font=pg.font.Font(font, font_size),
+            anchor=Anchor.center,
+        )
+        self.buy_button.disable()
+
         # Меню покупки предмета
         self.item_preview = WidgetsGroup(
             self,
             f"{self.name}-ItemPreview",
-            x=0,
-            y=lambda obj: round(self.rect.bottom - obj.rect.height - 10),
-            width=self.width - self.padding * 2,
+            x=parent.field.rect.left / 70,
+            y=lambda obj: round(
+                self.buy_button.rect.top
+                - parent.field.rect.left / 70 * 2
+                - obj.rect.height
+            ),
+            width=parent.field.rect.left - parent.field.rect.left / 70 * 5,
             padding=10,
             hidden=True,
         )
         self.item_preview.disable()
 
         self.item_desc: ItemDescription = ...  # Описание выбранного предмета
-
-        self.buy_button = Button(
-            self.item_preview,
-            name=f"{self.item_preview.name}-BuyButton",
-            x=0,
-            y=lambda obj: (self.item_desc.rect.bottom + 10)
-            if self.item_desc is not ...
-            else 0,
-            width=self.item_preview.rect.width - self.item_preview.padding * 2,
-            text="Купить",
-            padding=5,
-            active_background=pg.Color("gray"),
-            font=pg.font.Font(font, font_size),
-            anchor=Anchor.center,
-            border_width=2,
-        )
 
     def add_item(self, item: Item | None) -> ItemStand:
         """
@@ -1561,7 +1581,7 @@ class ShopMenu(WidgetsGroup):
         icon_size = int(int(os.environ["icon_size"]))
 
         # Кол-во предметов в строке
-        k = 3 if len(self.network_client.room.players) < 4 else 4
+        k = 3 if len(self.network_client.room.players) < 4 else 5
         in_line_count = math.ceil(len(self.network_client.room.shop) / k)
         width = int((self.rect.width - self.padding * 2) / in_line_count)
         while width < icon_size * 2:
@@ -1570,7 +1590,7 @@ class ShopMenu(WidgetsGroup):
 
         if not len(self.items):  # Если это первый предмет
             x = 0
-            y = 20
+            y = round(self.height / 9 * 3.5 / 70 * 5)
         else:
             y = self.items[-1].rect.y
             x = self.items[-1].rect.right
@@ -1608,9 +1628,11 @@ class ShopMenu(WidgetsGroup):
                                     )
                                     self.item_preview.enable()
                                     self.item_preview.show()
+                                    self.buy_button.enable()
                                 else:
                                     self.item_preview.disable()
                                     self.item_preview.hide()
+                                    self.buy_button.disable()
                                 self.item_preview.update()
                                 break
 
@@ -1619,7 +1641,6 @@ class DicesWidget(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
 
         # TODO: Кости от скорости перекручиваются
-        # TODO: Адаптация остального интерфейса через 3\70
         super(DicesWidget, self).__init__(
             parent,
             f"{parent.name}-DicesWidget",
@@ -1709,7 +1730,7 @@ class GameClientScreen(Group):
             width=self.field.rect.left - 20,
             text="Пропустить ход",
             padding=5,
-            active_background=pg.Color("gray"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
             callback=lambda ev: self.network_client.pass_move(
@@ -1726,7 +1747,12 @@ class GameClientScreen(Group):
             self,
             self.network_client,
             width=self.players_menu.width - self.players_menu.padding * 2,
-            y=lambda obj: round(self.dices_widget.rect.top - obj.rect.height - 10),
+            x=lambda obj: self.field.rect.left / 70 * 5,
+            y=lambda obj: round(
+                self.dices_widget.rect.top
+                - obj.rect.height
+                - self.field.rect.left / 70 * 2
+            ),
         )
         self.enemy_menu = EnemyMenu(self)
         self.boss_menu = BossMenu(self)

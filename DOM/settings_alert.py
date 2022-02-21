@@ -104,7 +104,7 @@ class Settings(Alert):
         resolution = Resolution.converter(os.environ["resolution"])
 
         os.environ["font_size"] = str(
-            int(13 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
+            int(12 * (1 + ALLOWED_RESOLUTION.index(resolution) * 0.4))
         )  # Масштабируем размер текста в зависимости от размера окна
 
         os.environ["icon_size"] = str(
