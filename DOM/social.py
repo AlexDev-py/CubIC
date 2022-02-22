@@ -551,26 +551,26 @@ class Social(WidgetsGroup):
         Добавление друга.
         :param user: Пользователь.
         """
-        self.friends.append(
-            FriendWidget(
-                self,
-                y=lambda obj: (
-                    self.title.get_global_rect().bottom
-                    + 10
-                    + (
-                        sum(
-                            widget.rect.height
-                            for widget in self.friends[: self.friends.index(obj)]
-                        )
-                        if obj in self.friends
-                        else 0
-                    )
-                ),  # Динамическая координата Y
-                user=user,
-            )
-        )  # Добавляем виджет друга
-        self.add(self.friends[-1])
-        # self.parent.update()
+        widget = FriendWidget(
+            self,
+            y=lambda obj: (
+                self.title.get_global_rect().bottom
+                + 10
+                + (
+                    sum(w.rect.height for w in self.friends[: self.friends.index(obj)])
+                    if obj in self.friends
+                    else 0
+                )
+            ),  # Динамическая координата Y
+            user=user,
+        )
+        self.friends.append(widget)  # Добавляем виджет друга
+        self.add(widget)
+        widget.drop_menu = FriendDropMenu(
+            widget,
+            f"{widget.user.username}-DropMenu",
+            can_invite=lambda: self.network_client.room is not ...,
+        )
 
     def on_change_user_status(self, user: User) -> None:
         """
