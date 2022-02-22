@@ -1640,7 +1640,6 @@ class ShopMenu(WidgetsGroup):
 class DicesWidget(WidgetsGroup):
     def __init__(self, parent: GameClientScreen):
 
-        # TODO: Кости от скорости перекручиваются
         super(DicesWidget, self).__init__(
             parent,
             f"{parent.name}-DicesWidget",

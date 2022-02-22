@@ -263,7 +263,9 @@ class Dice(BaseWidget):
         if not len(self.move_stack):
             if self.in_move:
                 self.in_move = False
+                super(Dice, self).update()
                 DiceMovingStop(self).post()
+                return True
 
     def move_from_list(self, data: list[tuple[int, int]]) -> None:
         """
@@ -299,13 +301,20 @@ class Dice(BaseWidget):
         return self.rect
 
     def _render(self) -> pg.Surface:
-        image = pg.Surface(self.rect.size, pg.SRCALPHA, 32).convert_alpha()
-        for i in range(len(self.visible_corners)):
-            polygon = self.visible_corners[i]
-            dsize = (
-                round(abs(polygon[0][0] - polygon[2][0])) + 1,
-                round(abs(polygon[0][1] - polygon[2][1])) + 1,
+        def get_size(polygon_: list[list[int]]) -> tuple[int, int]:
+            return (
+                round(abs(polygon_[0][0] - polygon_[2][0])) + 1,
+                round(abs(polygon_[0][1] - polygon_[2][1])) + 1,
             )
+
+        image = pg.Surface(self.rect.size, pg.SRCALPHA, 32).convert_alpha()
+        corners = (
+            self.visible_corners
+            if self.__dict__.get("in_move")
+            else [max(self.visible_corners, key=lambda poly: get_size(poly))]
+        )
+        for i, polygon in enumerate(corners):
+            dsize = get_size(polygon)
             image.blit(
                 pg.transform.scale(self.facets[self.visible_images[i]], dsize),
                 polygon[0],
