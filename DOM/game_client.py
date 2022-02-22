@@ -36,6 +36,68 @@ if ty.TYPE_CHECKING:
 # ==== MENUS ====
 
 
+class GameOverStatistic(WidgetsGroup):
+    eng_rus = {
+        "damage_received": "Получено урона",
+        "damage_done": "Нанесено урона",
+        "damage_blocked": "Заблокировано урона",
+        "stolen_life": "Похищено жизни",
+        "enemies_killed": "Убито врагов",
+        "bosses_killed": "Убито боссов",
+        "coins_earned": "Получено монет",
+        "coins_spent": "Потрачено монет",
+        "purchased_items": "Куплено предметов",
+        "deaths": "Смертей",
+    }
+
+    def __init__(
+        self,
+        name: str,
+        x: int,
+        y: int,
+        width: int,
+        username: str,
+        statistics: dict[str, int],
+    ):
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(GameOverStatistic, self).__init__(
+            None, name, x=x, y=y, width=width, border_width=2, padding=5
+        )
+
+        self.username_label = Text(
+            self,
+            f"{self.name}-UsernameLabel",
+            x=0,
+            y=0,
+            width=self.rect.width - self.padding * 2,
+            text=username,
+            font=pg.font.Font(font, font_size),
+            anchor=Anchor.center,
+        )
+
+        self.stats: list[Text] = []
+
+        y = self.username_label.rect.bottom + 10
+        for key, value in statistics.items():
+            self.stats.append(
+                Text(
+                    None,
+                    f"{self.name}-{key}-Stat",
+                    x=0,
+                    y=y,
+                    width=self.rect.width - self.padding * 2,
+                    text=f"{self.eng_rus[key]}:  {value}",
+                    font=pg.font.Font(font, round(font_size * 0.8)),
+                    anchor=Anchor.center,
+                )
+            )
+            y = self.stats[-1].rect.bottom + 5
+
+        self.add(*self.stats)
+
+
 class GameOverAlert(Alert):
     def __init__(self, parent: GameClientScreen):
         """
@@ -50,7 +112,7 @@ class GameOverAlert(Alert):
             parent,
             "Menu",
             parent_size=resolution,
-            width=int(resolution.width * 0.5),
+            width=int(resolution.width * 0.7),
             padding=20,
             background=pg.Color("#122321"),
             border_color=pg.Color("#b9a66d"),
@@ -63,17 +125,26 @@ class GameOverAlert(Alert):
             f"{self.name}-TitleLabel",
             x=0,
             y=0,
-            width=self.rect.width,
+            width=self.rect.width - self.padding * 2,
             text="Игра окончена",
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
         )
 
+        self.statistics: list[GameOverStatistic] = []
+
         self.exit_button = Button(
             self,
             f"{self.name}-ExitButton",
-            x=lambda obj: self.rect.width / 2 - obj.rect.width / 2,
-            y=self.title.rect.bottom + 10,
+            x=lambda obj: (self.rect.width - self.padding * 2) / 2 - obj.rect.width / 2,
+            y=lambda obj: (
+                (
+                    self.title.rect.bottom
+                    if not len(self.statistics)
+                    else max(stat.rect.bottom for stat in self.statistics)
+                )
+                + 10
+            ),
             width=int(self.rect.width * 0.8),
             text="Выйти",
             padding=5,
@@ -86,6 +157,24 @@ class GameOverAlert(Alert):
                 parent.terminate(),
             ),
         )
+
+    def init(self, data: dict[str, dict[str, int]]) -> None:
+        width = round((self.rect.width - self.padding * 2) / len(data))
+        y = self.title.rect.bottom + 10
+        self.statistics = []
+        for i, (username, statistics) in enumerate(data.items()):
+            self.statistics.append(
+                GameOverStatistic(
+                    f"{self.name}-{username}-Statistics",
+                    width * i,
+                    y,
+                    width,
+                    username,
+                    statistics,
+                )
+            )
+        self.add(*self.statistics)
+        self.update()
 
 
 class EscMenu(Alert):
@@ -301,7 +390,6 @@ class Field(WidgetsGroup):
         height = width = min(resolution)  # Размеры поля
 
         self.network_client = parent.network_client
-        self.lock_update = False
 
         self._field_image = pg.Surface((width, height))
 
@@ -468,7 +556,7 @@ class Field(WidgetsGroup):
         """
         Отображение игры.
         """
-        if self.lock_update:
+        if self.network_client.room is ...:
             return
 
         image = pg.Surface(self._field_image.get_size())
@@ -1093,6 +1181,7 @@ class PlayerWidget(WidgetsGroup):
         icon_size = int(os.environ["icon_size"])
         font = os.environ.get("font")
 
+        self.lock = False
         self.player = player
         self.network_client = network_client
 
@@ -1140,6 +1229,17 @@ class PlayerWidget(WidgetsGroup):
         Обновляет данные об игроке.
         :param player: Новый экземпляр игрока.
         """
+
+        def wait_unlock():
+            while self.lock:
+                time.sleep(0.1)
+            self.update_data(player)
+
+        if self.lock:
+            return Thread(wait_unlock).run()
+
+        self.lock = True
+
         icon_size = int(os.environ["icon_size"])
 
         self.player = player
@@ -1161,11 +1261,14 @@ class PlayerWidget(WidgetsGroup):
 
         if self.items is ...:
             self.items = ItemsWidget(self)
-            self.stats = StatsWidget(self)
         else:
             self.items.update_items(self.player)
+
+        if self.stats is not ...:
             self.remove(self.stats)
-            self.stats = StatsWidget(self)
+        self.stats = StatsWidget(self)
+
+        self.lock = False
 
     def handle_event(self, event: pg.event.Event) -> None:
         super(PlayerWidget, self).handle_event(event)
@@ -1778,7 +1881,12 @@ class GameClientScreen(Group):
             )
         )
         self.network_client.on_start_game(callback=self.on_start_game)
-        self.network_client.on_game_over(callback=self.game_over_alert.show)
+        self.network_client.on_game_over(
+            callback=lambda data: (
+                self.game_over_alert.init(data),
+                self.game_over_alert.show(),
+            )
+        )
 
         # ITEMS
         self.network_client.on_buying_an_item(
@@ -2086,78 +2194,86 @@ class GameClientScreen(Group):
                 self.network_client.next("stop rolling")
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == pg.BUTTON_LEFT:
-                    for pos, rect in self.field.ways.items():
-                        if self.field.get_global_rect_of(rect).collidepoint(event.pos):
-                            self.network_client.move(
-                                *pos, fail_callback=self.info_alert.show_message
-                            )
-
-                    if self.field.boss is not ...:
-                        if self.field.boss.data.hp > 0:
-                            if self.field.get_global_rect_of(
-                                self.field.boss.rect
-                            ).collidepoint(event.pos):
-                                if self.__dict__.get("eids"):
-                                    self.network_client.choice_enemy(
-                                        -1,
-                                        fail_callback=self.info_alert.show_message,
-                                    )
-                                self.enemy_menu.hide()
-                                self.player_nemu.hide()
-                                self.player_nemu.disable()
-                                self.boss_menu.init(self.field.boss)
-                                return
-                    for enemy in self.field.enemies.values():
-                        if self.field.get_global_rect_of(enemy.rect).collidepoint(
-                            event.pos
-                        ):
-                            if self.__dict__.get("eids"):
-                                self.network_client.choice_enemy(
-                                    enemy.data.eid,
-                                    fail_callback=self.info_alert.show_message,
-                                )
-                            self.boss_menu.hide()
-                            self.player_nemu.hide()
-                            self.player_nemu.disable()
-                            self.enemy_menu.init(enemy)
-                            return
-                    for player in self.field.characters.values():
-                        if (
-                            player.data.uid
-                            != self.players_menu.client_player.player.uid
-                        ):
-                            if self.field.get_global_rect_of(player.rect).collidepoint(
+                    if self.field.enabled:
+                        for pos, rect in self.field.ways.items():
+                            if self.field.get_global_rect_of(rect).collidepoint(
                                 event.pos
                             ):
+                                self.network_client.move(
+                                    *pos, fail_callback=self.info_alert.show_message
+                                )
+
+                        if self.field.boss is not ...:
+                            if self.field.boss.data.hp > 0:
+                                if self.field.get_global_rect_of(
+                                    self.field.boss.rect
+                                ).collidepoint(event.pos):
+                                    if self.__dict__.get("eids"):
+                                        self.network_client.choice_enemy(
+                                            -1,
+                                            fail_callback=self.info_alert.show_message,
+                                        )
+                                    self.enemy_menu.hide()
+                                    self.player_nemu.hide()
+                                    self.player_nemu.disable()
+                                    self.boss_menu.init(self.field.boss)
+                                    return
+                        for enemy in self.field.enemies.values():
+                            if self.field.get_global_rect_of(enemy.rect).collidepoint(
+                                event.pos
+                            ):
+                                if self.__dict__.get("eids"):
+                                    self.network_client.choice_enemy(
+                                        enemy.data.eid,
+                                        fail_callback=self.info_alert.show_message,
+                                    )
                                 self.boss_menu.hide()
-                                self.enemy_menu.hide()
-                                self.player_nemu.update_data(player.data)
-                                self.player_nemu.show()
-                                self.player_nemu.enable()
+                                self.player_nemu.hide()
+                                self.player_nemu.disable()
+                                self.enemy_menu.init(enemy)
                                 return
+                        for player in self.field.characters.values():
+                            if (
+                                player.data.uid
+                                != self.players_menu.client_player.player.uid
+                            ):
+                                if self.field.get_global_rect_of(
+                                    player.rect
+                                ).collidepoint(event.pos):
+                                    self.boss_menu.hide()
+                                    self.enemy_menu.hide()
+                                    self.player_nemu.update_data(player.data)
+                                    self.player_nemu.show()
+                                    self.player_nemu.enable()
+                                    return
 
-                    if self.dices_widget.dice.get_global_rect().collidepoint(event.pos):
-                        self.pass_move_button.disable()
-                        self.network_client.roll_the_dice(
-                            lambda msg: (
-                                self.info_alert.show_message(msg),
-                                self.pass_move_button.enable(),
-                            )
-                        )
-                    if self.dices_widget.dice2.get_global_rect().collidepoint(
-                        event.pos
-                    ):
-                        self.pass_move_button.disable()
-                        self.network_client.roll_the_fight_dice(
-                            lambda msg: (
-                                self.info_alert.show_message(msg),
-                                self.pass_move_button.enable(),
-                            )
-                        )
+                        if self.field.finish is not ...:
+                            if self.field.get_global_rect_of(
+                                self.field.finish
+                            ).collidepoint(event.pos):
+                                self.loading_screen.show_message(
+                                    "Переход на новый уровень"
+                                )
+                                self.network_client.start_game()
 
-                    if self.field.finish is not ...:
-                        if self.field.get_global_rect_of(
-                            self.field.finish
-                        ).collidepoint(event.pos):
-                            self.loading_screen.show_message("Переход на новый уровень")
-                            self.network_client.start_game()
+                    if self.dices_widget.enabled:
+                        if self.dices_widget.dice.get_global_rect().collidepoint(
+                            event.pos
+                        ):
+                            self.pass_move_button.disable()
+                            self.network_client.roll_the_dice(
+                                lambda msg: (
+                                    self.info_alert.show_message(msg),
+                                    self.pass_move_button.enable(),
+                                )
+                            )
+                        if self.dices_widget.dice2.get_global_rect().collidepoint(
+                            event.pos
+                        ):
+                            self.pass_move_button.disable()
+                            self.network_client.roll_the_fight_dice(
+                                lambda msg: (
+                                    self.info_alert.show_message(msg),
+                                    self.pass_move_button.enable(),
+                                )
+                            )

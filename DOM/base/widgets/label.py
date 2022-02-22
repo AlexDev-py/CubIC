@@ -16,7 +16,7 @@ if ty.TYPE_CHECKING:
 class Label(BaseWidget):
     def __init__(
         self,
-        parent: Group,
+        parent: Group | None,
         name: str = None,
         *,
         x: int | CordFunction,

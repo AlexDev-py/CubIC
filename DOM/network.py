@@ -417,6 +417,7 @@ class NetworkClient:
                 logger.info("Обновление списка игроков"),
                 [self.room.update_player(player) for player in response["players"]],
                 callback(),
+                logger.debug("Игроки обновлены"),
             ),
         )
 
@@ -443,14 +444,16 @@ class NetworkClient:
             ),
         )
 
-    def on_game_over(self, callback: ty.Callable[[], ...]) -> None:
+    def on_game_over(
+        self, callback: ty.Callable[[dict[str, dict[str, int]]], ...]
+    ) -> None:
         self.sio.on(
             "game over",
-            lambda *response: (
+            lambda response: (
                 logger.info("Игра окончена"),
                 self.sio.handlers.clear(),
                 self.__setattr__("room", ...),
-                callback(),
+                callback(response),
             ),
         )
 

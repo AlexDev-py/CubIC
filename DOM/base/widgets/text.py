@@ -15,7 +15,7 @@ if ty.TYPE_CHECKING:
 class Text(Label):
     def __init__(
         self,
-        parent: Group,
+        parent: Group | None,
         name: str = None,
         *,
         x: int | CordFunction,
