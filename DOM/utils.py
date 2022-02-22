@@ -353,7 +353,7 @@ class LoadingScreen(Alert):
             name,
             parent_size=parent_size,
             width=round(parent_size[0] * 0.8),
-            background=pg.Color("#1D4142"),
+            background=pg.Color("black"),
             fogging=255,
         )
 

@@ -18,7 +18,7 @@ from database.field_types import Resolution
 from lobby import Lobby, LobbyInvite
 from settings_alert import Settings
 from social import Social
-from utils import InfoAlert, LoadingAlert, FinishStatus, load_image
+from utils import InfoAlert, FinishStatus, load_image, LoadingScreen
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -211,15 +211,13 @@ class MenuScreen(Group):
             parent_size=resolution,
             width=int(resolution.width * 0.5),
         )
-        self.loading_alert = LoadingAlert(
-            self,
-            f"{self.name}-LoadingAlert",
-            parent_size=resolution,
-            width=int(resolution.width * 0.5),
-        )
 
         # Приглашение в лобби
         self.lobby_invite: LobbyInvite = ...
+
+        self.loading_screen = LoadingScreen(
+            self, f"{self.name}-LoadingScreen", parent_size=resolution
+        )
 
         # Подключаем обработчики событий
         self.network_client.on_lobby_invite(callback=self.on_lobby_invite)
@@ -229,7 +227,10 @@ class MenuScreen(Group):
         )
 
         self.network_client.on_loading_game(
-            callback=lambda: self.loading_alert.show_message("Запуск игры")
+            callback=lambda: (
+                self.loading_screen.show_message("Запуск игры"),
+                self.update(),
+            )
         )
         self.network_client.on_start_game(
             callback=lambda: (

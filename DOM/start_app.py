@@ -183,5 +183,6 @@ class StartAppScreen(Group):
         """
         Останавливает приложения.
         """
+        self.remove(*self.objects)
         logger.debug("Остановка окна загрузки клиента")
         self.running = False

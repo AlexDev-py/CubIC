@@ -45,6 +45,8 @@ class LobbyInvite(DropMenu):
             width=int(resolution.width * 0.3),
             padding=20,
             background=pg.Color("#152622"),
+            border_color=pg.Color("#f0ce69"),
+            border_width=3,
         )
 
         self.msg = Text(
