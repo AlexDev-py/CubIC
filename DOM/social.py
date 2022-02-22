@@ -58,8 +58,8 @@ class FriendDropMenu(DropMenu):
         super(FriendDropMenu, self).__init__(
             parent,
             name,
-            background=pg.Color("gray"),
-            border_color=pg.Color("red"),
+            background=pg.Color("#152622"),
+            border_color=pg.Color("#b9a66d"),
             border_width=2,
         )
 
@@ -70,9 +70,8 @@ class FriendDropMenu(DropMenu):
             y=0,
             text="Удалить друга",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("black"),
-            font=pg.font.Font(font, int(font_size * 0.6)),
+            active_background=pg.Color(222, 222, 222, 100),
+            font=pg.font.Font(font, int(font_size * 0.7)),
         )
 
         self.send_invite_button = Button(
@@ -82,9 +81,8 @@ class FriendDropMenu(DropMenu):
             y=self.delete_friend_button.rect.bottom,
             text="Пригласить в группу",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("black"),
-            font=pg.font.Font(font, int(font_size * 0.6)),
+            active_background=pg.Color(222, 222, 222, 100),
+            font=pg.font.Font(font, int(font_size * 0.7)),
         )
 
     def show(self) -> None:
@@ -158,7 +156,6 @@ class UserWidget(WidgetsGroup):
             x=self.icon.rect.right + 30,
             y=0,
             text=user.username,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -267,8 +264,7 @@ class FriendRequestWidget(UserWidget):
             y=self.icon.rect.bottom + 5,
             text=" + ",
             padding=1,
-            color=pg.Color("red"),
-            active_background=pg.Color("gray"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.8)),
             callback=lambda event: callback("ok", self),
         )
@@ -280,8 +276,7 @@ class FriendRequestWidget(UserWidget):
             y=self.icon.rect.bottom + 5,
             text=" - ",
             padding=1,
-            color=pg.Color("red"),
-            active_background=pg.Color("gray"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.8)),
             callback=lambda event: callback("cancel", self),
         )
@@ -308,7 +303,9 @@ class FriendRequests(Alert):
             width=int(resolution.width * 0.5),
             height=int(resolution.height * 0.8),
             padding=20,
-            background=pg.Color("black"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
+            border_width=3,
             fogging=50,
         )
 
@@ -326,10 +323,8 @@ class FriendRequests(Alert):
             y=0,
             text=" X ",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.7)),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
@@ -342,7 +337,6 @@ class FriendRequests(Alert):
             ),
             y=0,
             text="Добавить друзей",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -354,11 +348,10 @@ class FriendRequests(Alert):
             description="Имя пользователя",
             width=int(self.rect.width * 0.8) - self.padding * 2,
             padding=5,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            inactive_border_color=pg.Color("red"),
-            active_border_color=pg.Color("white"),
-            border_width=5,
+            inactive_border_color=pg.Color("#b9a66d"),
+            active_border_color=pg.Color("#f0ce69"),
+            border_width=3,
             text_filter=NickTextFilter,
         )
 
@@ -371,11 +364,9 @@ class FriendRequests(Alert):
             height=self.username_input.input_line.rect.height,
             text="Найти",
             padding=5,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            active_background=pg.Color("gray"),
-            border_color=pg.Color("red"),
-            border_width=5,
+            active_background=pg.Color(222, 222, 222, 100),
+            border_width=3,
             callback=lambda event: self.send_request(),
         )
 
@@ -387,7 +378,6 @@ class FriendRequests(Alert):
             ),
             y=self.find_friend_button.rect.bottom + 10,
             text="Запросы в друзья",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -474,7 +464,7 @@ class Social(WidgetsGroup):
             y=0,
             width=int(resolution.width * 0.2),
             height=resolution.height,
-            border_color=pg.Color("red"),
+            border_color=pg.Color("#b9a66d"),
             border_width=5,
         )
 
@@ -491,7 +481,7 @@ class Social(WidgetsGroup):
             y=self.user_widget.rect.bottom,
             width=self.rect.width,
             height=5,
-            color=pg.Color("red"),
+            color=pg.Color("#b9a66d"),
         )
 
         self.title = Label(
@@ -500,7 +490,6 @@ class Social(WidgetsGroup):
             x=5,
             y=self.line.rect.bottom + 5,
             text="Сообщество",
-            color=pg.Color("red"),
             font=pg.font.Font(font, int(font_size * 0.8)),
         )
         self.add_friend_button = Button(
@@ -509,10 +498,10 @@ class Social(WidgetsGroup):
             x=self.title.rect.right + 10,
             y=self.title.rect.top,
             text=" + ",
-            color=pg.Color("red"),
+            color=pg.Color("#b9a66d"),
             font=pg.font.Font(font, int(font_size * 0.8)),
             padding=1,
-            active_background=pg.Color("gray"),
+            active_background=pg.Color(222, 222, 222, 100),
             callback=lambda event: self.friend_requests.show(),
         )
 

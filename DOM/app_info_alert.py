@@ -39,7 +39,7 @@ class MemberWidget(WidgetsGroup):
             x=0,
             y=0,
             text=name,
-            color=(pg.Color("#f72a42") if site else pg.Color("red")),
+            color=(pg.Color("#f0ce69") if site else pg.Color("white")),
             font=pg.font.Font(font, font_size),
             callback=lambda event: (webbrowser.open_new_tab(site) if site else ...),
         )
@@ -50,7 +50,6 @@ class MemberWidget(WidgetsGroup):
             x=self.name_button.rect.right,
             y=0,
             text=f" - {role}",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -69,7 +68,9 @@ class AppInfoAlert(Alert):
             width=round(resolution.width * 0.7),
             height=round(resolution.height * 0.7),
             padding=20,
-            background=pg.Color("black"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
+            border_width=3,
         )
 
         self.title = Label(
@@ -81,7 +82,6 @@ class AppInfoAlert(Alert):
             y=0,
             width=self.rect.width,
             text="Об игре",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
         )
@@ -102,7 +102,7 @@ class AppInfoAlert(Alert):
             x=self.icon_label.rect.right + 20,
             y=lambda obj: 0,
             text="Dungeon of Masters",
-            color=pg.Color("red"),
+            color=pg.Color("#b9a66d"),
             font=pg.font.Font(font, font_size),
         )
         self.version_label = Label(
@@ -111,7 +111,6 @@ class AppInfoAlert(Alert):
             x=self.icon_label.rect.right + 20,
             y=lambda obj: 0,
             text=f"Версия: {os.environ['VERSION']}",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
         block_height = self.name_label.rect.h + self.version_label.rect.h + 5
@@ -162,7 +161,7 @@ class AppInfoAlert(Alert):
             x=0,
             y=self.wyvverna.rect.bottom + 30,
             text="Страница проекта",
-            color=pg.Color("#f72a42"),
+            color=pg.Color("#f0ce69"),
             font=pg.font.Font(font, font_size),
             callback=lambda event: webbrowser.open_new_tab(
                 "https://github.com/AlexDev-py/DOM"
@@ -174,13 +173,12 @@ class AppInfoAlert(Alert):
             x=lambda obj: round(
                 (self.rect.width - self.padding * 2) / 2 - obj.rect.width / 2
             ),
-            y=lambda obj: (self.rect.height - self.padding * 2) - obj.rect.height,
+            y=lambda obj: (self.rect.height - self.padding * 2 - self.border_width * 2)
+            - obj.rect.height,
             text="Закрыть",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )

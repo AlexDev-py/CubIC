@@ -174,20 +174,20 @@ class LoadingAlert(Alert):
             parent_size=parent_size,
             width=width,
             padding=20,
-            background=pg.Color("black"),
-            border_color=pg.Color("red"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
             border_width=3,
             fogging=100,
         )
 
         self.text = Text(
             self,
-            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            x=0,
             y=0,
-            width=self.rect.width - self.padding * 2,
+            width=self.rect.width - self.padding * 2 - self.border_width * 2,
             text="...",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
+            anchor=Anchor.center,
             soft_split=True,
         )
 
@@ -230,14 +230,15 @@ class InfoAlert(LoadingAlert):
 
         self.continue_button = Button(
             self,
-            x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
+            x=lambda obj: round(
+                (self.rect.width - self.padding * 2 - self.border_width * 2) / 2
+                - obj.rect.width / 2
+            ),
             y=lambda obj: self.text.rect.bottom + 20,
             text="ок",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
@@ -352,7 +353,7 @@ class LoadingScreen(Alert):
             name,
             parent_size=parent_size,
             width=round(parent_size[0] * 0.8),
-            background=pg.Color("black"),
+            background=pg.Color("#1D4142"),
             fogging=255,
         )
 
@@ -362,7 +363,6 @@ class LoadingScreen(Alert):
             y=0,
             width=self.rect.width - self.padding * 2,
             text="...",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             anchor=Anchor.center,
             soft_split=True,

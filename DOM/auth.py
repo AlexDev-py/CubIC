@@ -48,7 +48,8 @@ class Login(WidgetsGroup):
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2 - 20),
             y=int(parent.SIZE[1] * 0.2),
             text="Авторизация",
-            color=pg.Color("red"),
+            padding=7,
+            border_width=3,
             font=pg.font.Font(font, 30),
         )
 
@@ -59,12 +60,11 @@ class Login(WidgetsGroup):
             y=self.title.rect.bottom + 40,
             description="Имя пользователя",
             width=self.rect.width * 0.9,
-            color=pg.Color("red"),
             padding=5,
             font=pg.font.Font(font, 25),
-            inactive_border_color=pg.Color("gray"),
-            active_border_color=pg.Color("black"),
-            border_width=5,
+            inactive_border_color=pg.Color("#b9a66d"),
+            active_border_color=pg.Color("#f0ce69"),
+            border_width=2,
             text_filter=NickTextFilter,
         )
 
@@ -75,12 +75,11 @@ class Login(WidgetsGroup):
             y=self.login.rect.bottom + 30,
             description="Пароль",
             width=self.rect.width * 0.9,
-            color=pg.Color("red"),
             padding=5,
             font=pg.font.Font(font, 20),
-            inactive_border_color=pg.Color("gray"),
-            active_border_color=pg.Color("black"),
-            border_width=5,
+            inactive_border_color=pg.Color("#b9a66d"),
+            active_border_color=pg.Color("#f0ce69"),
+            border_width=2,
             is_password=True,
             text_filter=PasswordTextFilter,
         )
@@ -92,10 +91,8 @@ class Login(WidgetsGroup):
             y=self.password.rect.bottom + 30,
             text="Войти",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, 17),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.auth(parent),
         )
@@ -107,7 +104,7 @@ class Login(WidgetsGroup):
             y=self.login_button.rect.bottom + 5,
             text="зарегистрироваться",
             padding=5,
-            color=pg.Color("blue"),
+            color=pg.Color("#f0ce69"),
             font=pg.font.Font(font, 13),
             callback=lambda event: parent.show_signup_group(),
         )
@@ -160,7 +157,8 @@ class Signup(WidgetsGroup):
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2 - 20),
             y=int(parent.SIZE[1] * 0.1),
             text="Регистрация",
-            color=pg.Color("red"),
+            border_width=3,
+            padding=7,
             font=pg.font.Font(font, 30),
         )
 
@@ -171,12 +169,11 @@ class Signup(WidgetsGroup):
             y=self.title.rect.bottom + 40,
             description="Имя пользователя",
             width=self.rect.width * 0.9,
-            color=pg.Color("red"),
             padding=5,
             font=pg.font.Font(font, 20),
-            inactive_border_color=pg.Color("gray"),
-            active_border_color=pg.Color("black"),
-            border_width=5,
+            inactive_border_color=pg.Color("#b9a66d"),
+            active_border_color=pg.Color("#f0ce69"),
+            border_width=2,
             text_filter=NickTextFilter,
         )
 
@@ -187,12 +184,11 @@ class Signup(WidgetsGroup):
             y=self.login.rect.bottom + 30,
             description="Пароль",
             width=self.rect.width * 0.9,
-            color=pg.Color("red"),
             padding=5,
             font=pg.font.Font(font, 20),
-            inactive_border_color=pg.Color("gray"),
-            active_border_color=pg.Color("black"),
-            border_width=5,
+            inactive_border_color=pg.Color("#b9a66d"),
+            active_border_color=pg.Color("#f0ce69"),
+            border_width=2,
             is_password=True,
             text_filter=PasswordTextFilter,
         )
@@ -204,12 +200,11 @@ class Signup(WidgetsGroup):
             y=self.password.rect.bottom + 30,
             description="Повторите пароль",
             width=self.rect.width * 0.9,
-            color=pg.Color("red"),
             padding=5,
             font=pg.font.Font(font, 20),
-            inactive_border_color=pg.Color("gray"),
-            active_border_color=pg.Color("black"),
-            border_width=5,
+            inactive_border_color=pg.Color("#b9a66d"),
+            active_border_color=pg.Color("#f0ce69"),
+            border_width=2,
             is_password=True,
             text_filter=PasswordTextFilter,
         )
@@ -221,10 +216,8 @@ class Signup(WidgetsGroup):
             y=self.password2.rect.bottom + 30,
             text="Создать аккаунт",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, 17),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.auth(parent),
         )
@@ -236,7 +229,7 @@ class Signup(WidgetsGroup):
             y=self.signup_button.rect.bottom + 5,
             text="авторизоваться",
             padding=5,
-            color=pg.Color("blue"),
+            color=pg.Color("#f0ce69"),
             font=pg.font.Font(font, 13),
             callback=lambda event: parent.show_login_group(),
         )
@@ -348,7 +341,13 @@ class AuthScreen(Group):
         """
         Отрисовка интерфейса.
         """
-        self.screen.fill("white")
+        self.screen.fill("#152622")
+        pg.draw.rect(
+            self.screen,
+            "#b9a66d",
+            pg.Rect(5, 5, self.SIZE[0] - 10, self.SIZE[1] - 10),
+            width=3,
+        )
         self.draw(self.screen)
         pg.display.flip()
 

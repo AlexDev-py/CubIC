@@ -44,7 +44,7 @@ class LobbyInvite(DropMenu):
             f"{room_id}-LobbyInvite",
             width=int(resolution.width * 0.3),
             padding=20,
-            background=pg.Color("gray"),
+            background=pg.Color("#152622"),
         )
 
         self.msg = Text(
@@ -54,7 +54,6 @@ class LobbyInvite(DropMenu):
             y=0,
             width=self.width - self.padding * 2,
             text=msg,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
             soft_split=True,
         )
@@ -66,10 +65,8 @@ class LobbyInvite(DropMenu):
             y=self.msg.rect.bottom + 20,
             text="Принять",
             padding=3,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            active_background=pg.Color("gray"),
-            border_color=pg.Color("red"),
+            active_background=pg.Color(222, 222, 222, 100),
             border_width=3,
         )
 
@@ -80,10 +77,8 @@ class LobbyInvite(DropMenu):
             y=self.msg.rect.bottom + 20,
             text=" Х ",
             padding=3,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            active_background=pg.Color("gray"),
-            border_color=pg.Color("red"),
+            active_background=pg.Color(222, 222, 222, 100),
             border_width=3,
         )
 
@@ -139,7 +134,7 @@ class PlayerWidget(WidgetsGroup):
             x=self.icon.rect.w + 10,
             y=lambda obj: round(self.rect.height / 2 - obj.rect.height - 2),
             text=player.username,
-            color=pg.Color("red"),
+            color=pg.Color("#f0ce69"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -153,7 +148,6 @@ class PlayerWidget(WidgetsGroup):
                 if player.is_owner
                 else ("Готов" if player.ready else "Не готов...")
             ),
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -194,10 +188,8 @@ class Buttons(WidgetsGroup):
             y=0,
             text=" Х ",
             padding=3,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            active_background=pg.Color("gray"),
-            border_color=pg.Color("red"),
+            active_background=pg.Color(222, 222, 222, 100),
             border_width=3,
         )
 
@@ -221,10 +213,8 @@ class Buttons(WidgetsGroup):
                 )
             ),
             padding=3,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
-            active_background=pg.Color("gray"),
-            border_color=pg.Color("red"),
+            active_background=pg.Color(222, 222, 222, 100),
             border_width=3,
         )
 
@@ -265,7 +255,6 @@ class CharacterButton(WidgetsGroup):
             x=self.icon.rect.right + 10,
             y=lambda obj: round(self.rect.height / 2 - obj.rect.height / 2),
             text=character.name,
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -302,7 +291,6 @@ class CharactersMenu(WidgetsGroup):
             x=0,
             y=0,
             text="Выбор персонажа",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 

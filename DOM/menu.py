@@ -35,8 +35,8 @@ class ExitAlert(Alert):
             "ExitAlert",
             parent_size=resolution,
             padding=20,
-            background=pg.Color("black"),
-            border_color=pg.Color("red"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
             border_width=3,
         )
 
@@ -48,7 +48,6 @@ class ExitAlert(Alert):
             ),
             y=0,
             text="Выход",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -59,10 +58,8 @@ class ExitAlert(Alert):
             y=0,
             text=" X ",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.7)),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
@@ -73,10 +70,8 @@ class ExitAlert(Alert):
             y=self.title.rect.bottom + 20,
             text="Выйти из аккаунта",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: (
                 parent.terminate(),
@@ -93,10 +88,8 @@ class ExitAlert(Alert):
             width=self.exit_akk.rect.width,
             text="Выйти из игры",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: parent.terminate(),
         )
@@ -199,10 +192,8 @@ class MenuScreen(Group):
             y=20,
             text=" i",
             padding=5,
-            color=pg.Color("red"),
             active_background=pg.Color("#171717"),
             font=pg.font.Font(font, font_size),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.app_info_alert.show(),
         )
@@ -263,6 +254,7 @@ class MenuScreen(Group):
             self.remove(self.lobby_invite)
             self.lobby_invite: LobbyInvite = ...
         self.lobby_invite = LobbyInvite(self.social, msg, room_id)
+        self.app_info_button.disable()
 
     def open_lobby(self) -> None:
         """
@@ -288,6 +280,7 @@ class MenuScreen(Group):
                         if event.obj == self.lobby_invite.cancel:
                             self.remove(self.lobby_invite)  # Удаляем приглашение
                             self.lobby_invite: LobbyInvite = ...
+                            self.app_info_button.enable()
                         elif event.obj == self.lobby_invite.accept:
                             self.remove(self.lobby_invite)  # Удаляем приглашение
                             self.network_client.join_lobby(

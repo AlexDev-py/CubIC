@@ -34,7 +34,9 @@ class Settings(Alert):
             width=int(resolution.width * 0.6),
             height=int(resolution.height * 0.8),
             padding=20,
-            background=pg.Color("black"),
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
+            border_width=3,
             fogging=100,
         )
 
@@ -45,10 +47,8 @@ class Settings(Alert):
             y=0,
             text=" X ",
             padding=5,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.7)),
-            border_color=pg.Color("red"),
             border_width=2,
             callback=lambda event: self.hide(),
         )
@@ -134,7 +134,6 @@ class ResolutionSetting(WidgetsGroup):
             x=0,
             y=0,
             text="Разрешение:",
-            color=pg.Color("red"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -145,10 +144,8 @@ class ResolutionSetting(WidgetsGroup):
             y=0,
             text=" < ",
             padding=2,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.7)),
-            border_color=pg.Color("red"),
             border_width=2,
         )
 
@@ -158,7 +155,7 @@ class ResolutionSetting(WidgetsGroup):
             x=self.btn_low.rect.right + 10,
             y=lambda obj: round(self.btn_low.rect.height / 2 - obj.rect.height / 2),
             text=str(resolution),
-            color=pg.Color("red"),
+            color=pg.Color("#b9a66d"),
             font=pg.font.Font(font, font_size),
         )
 
@@ -169,10 +166,8 @@ class ResolutionSetting(WidgetsGroup):
             y=0,
             text=" > ",
             padding=2,
-            color=pg.Color("red"),
-            active_background=pg.Color("#171717"),
+            active_background=pg.Color(222, 222, 222, 100),
             font=pg.font.Font(font, int(font_size * 0.7)),
-            border_color=pg.Color("red"),
             border_width=2,
         )
 
