@@ -2,13 +2,12 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "DOM"
-!define PRODUCT_VERSION "1.0.0-alpha.1"
+!define PRODUCT_VERSION "1.0.0-alpha.2"
 !define PRODUCT_PUBLISHER "5-Abobes INC :D"
 !define PRODUCT_WEB_SITE "https://github.com/AlexDev-py/DOM"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\DOM.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
-!define PRODUCT_STARTMENU_REGVAL "NSIS:StartMenuDir"
 
 SetCompressor lzma
 
@@ -27,14 +26,6 @@ SetCompressor lzma
 !insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
 ; Directory page
 !insertmacro MUI_PAGE_DIRECTORY
-; Start menu page
-var ICONS_GROUP
-!define MUI_STARTMENUPAGE_NODISABLE
-!define MUI_STARTMENUPAGE_DEFAULTFOLDER "DOM"
-!define MUI_STARTMENUPAGE_REGISTRY_ROOT "${PRODUCT_UNINST_ROOT_KEY}"
-!define MUI_STARTMENUPAGE_REGISTRY_KEY "${PRODUCT_UNINST_KEY}"
-!define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "${PRODUCT_STARTMENU_REGVAL}"
-!insertmacro MUI_PAGE_STARTMENU Application $ICONS_GROUP
 ; Instfiles page
 !insertmacro MUI_PAGE_INSTFILES
 ; Finish page
@@ -60,13 +51,16 @@ InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
 
-Section "DOM" SEC01
+Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   File "build\DOM\base_library.zip"
   SetOutPath "$INSTDIR\certifi"
   File "build\DOM\certifi\cacert.pem"
   SetOutPath "$INSTDIR"
   File "build\DOM\DOM.exe"
+  CreateDirectory "$SMPROGRAMS\DOM"
+  CreateShortCut "$SMPROGRAMS\DOM\DOM.lnk" "$INSTDIR\DOM.exe"
+  CreateShortCut "$DESKTOP\DOM.lnk" "$INSTDIR\DOM.exe"
   File "build\DOM\libcrypto-1_1.dll"
   File "build\DOM\libffi-7.dll"
   File "build\DOM\libFLAC-8.dll"
@@ -178,19 +172,10 @@ Section "DOM" SEC01
   File "build\DOM\_sqlite3.pyd"
   File "build\DOM\_ssl.pyd"
   File "build\DOM\_uuid.pyd"
-
-; Shortcuts
-  !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
-  CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
-  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\DOM.lnk" "$INSTDIR\DOM.exe"
-  CreateShortCut "$DESKTOP\DOM.lnk" "$INSTDIR\DOM.exe"
-  !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
 
 Section -AdditionalIcons
-  !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
-  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk" "$INSTDIR\uninst.exe"
-  !insertmacro MUI_STARTMENU_WRITE_END
+  CreateShortCut "$SMPROGRAMS\DOM\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
 
 Section -Post
@@ -200,6 +185,7 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\DOM.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
 SectionEnd
 
@@ -215,10 +201,8 @@ Function un.onInit
 FunctionEnd
 
 Section Uninstall
-  !insertmacro MUI_STARTMENU_GETFOLDER "Application" $ICONS_GROUP
-  
   ExecWait "$INSTDIR\DOM.exe --clear-appdata"
-  
+
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\_uuid.pyd"
   Delete "$INSTDIR\_ssl.pyd"
@@ -324,11 +308,11 @@ Section Uninstall
   Delete "$INSTDIR\certifi\cacert.pem"
   Delete "$INSTDIR\base_library.zip"
 
-  Delete "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk"
+  Delete "$SMPROGRAMS\DOM\Uninstall.lnk"
   Delete "$DESKTOP\DOM.lnk"
-  Delete "$SMPROGRAMS\$ICONS_GROUP\DOM.lnk"
+  Delete "$SMPROGRAMS\DOM\DOM.lnk"
 
-  RMDir "$SMPROGRAMS\$ICONS_GROUP"
+  RMDir "$SMPROGRAMS\DOM"
   RMDir "$INSTDIR\wheel-0.36.2.dist-info"
   RMDir "$INSTDIR\setuptools-60.9.3.dist-info"
   RMDir "$INSTDIR\pygame"
