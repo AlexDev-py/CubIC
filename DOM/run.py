@@ -26,6 +26,13 @@ parser.add_argument(
     help="Уровень логирования",
 )
 parser.add_argument(
+    "--host",
+    default="https://dungeon-of-masters.herokuapp.com",
+    # default="http://127.0.0.1:5000",  # localhost
+    type=str,
+    help="Сервер",
+)
+parser.add_argument(
     "--clear-appdata",
     action="store_true",
 )
@@ -68,12 +75,11 @@ os.environ["CUBE_PATH"] = os.path.join(os.environ["APP_DIR"], "cube")
 # Шрифт
 os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
-os.environ["VERSION"] = "1.0.0-alpha.2"
+os.environ["VERSION"] = "1.0.0-alpha.4"
 # Уровень логирования
 os.environ["LOGGING_LEVEL"] = args.ll
 # Сервер
-# os.environ["HOST"] = "http://127.0.0.1:5000"  # localhost
-os.environ["HOST"] = "https://dungeon-of-masters.herokuapp.com"
+os.environ["HOST"] = args.host
 
 if args.clear_appdata:
     import clear_appdata  # noqa

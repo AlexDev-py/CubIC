@@ -6,8 +6,10 @@
 
 from __future__ import annotations
 
+import ctypes
 import json
 import os
+import sys
 import time
 import typing as ty
 import urllib.error
@@ -107,6 +109,7 @@ class StartAppScreen(Group):
                     self.status.text = "Сервер недоступен\nПопробуйте позже"
                 time.sleep(5)
 
+        self.check_update()
         self.check_files()
 
         self.finish_status = FinishStatus.auth_failed
@@ -134,6 +137,41 @@ class StartAppScreen(Group):
         else:
             logger.info("Файл .auth не найден")
             self.terminate()
+
+    def check_update(self) -> None:
+        if sys.executable.endswith("python.exe"):
+            return
+
+        self.status.text = "Проверка обновлений"
+
+        last_version = self.network_client.get_last_version()
+        updater_path = os.path.join(
+            os.environ["APP_DIR"], f"DOMUpdate {last_version['v']}.exe"
+        )
+        if last_version["v"] != os.environ["VERSION"]:
+            logger.opt(colors=True).info(
+                "Update available "
+                f"<y>{os.environ['VERSION']}</y> -> <c>{last_version['v']}</c>"
+            )
+            self.status.text = f"Скачивание обновления: {last_version['v']}"
+            if not os.path.isfile(updater_path):
+                response = urllib.request.urlopen(last_version["updater"])  # Скачивание
+                while response.getcode() != 200:
+                    logger.error(f"download error. code: {response.getcode()}")
+                    response = urllib.request.urlopen(last_version["updater"])
+                logger.trace("Unzipping updater")
+                archive = BytesIO(response.read())
+                with zipfile.ZipFile(archive) as zip_file:  # Разархивация
+                    zip_file.extractall(os.environ["APP_DIR"])
+
+            logger.debug("Run updater")
+            ctypes.windll.shell32.ShellExecuteW(
+                None, "runas", updater_path, None, None, 1
+            )
+            self.terminate()
+        else:
+            if os.path.isfile(updater_path):
+                os.remove(updater_path)
 
     def check_files(self) -> None:
         self.status.text = "Проверка целостности файлов"

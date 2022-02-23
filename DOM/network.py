@@ -794,6 +794,9 @@ class NetworkClient:
     def get_data_links(self) -> dict[str, str]:
         return self._send_request("data_links", version=os.environ["VERSION"])
 
+    def get_last_version(self) -> dict[str, str]:
+        return self._send_request("get_last_version")
+
     @staticmethod
     def _send_request(namespace, **kwargs) -> dict:
         return requests.get(
