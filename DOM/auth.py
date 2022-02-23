@@ -323,6 +323,8 @@ class AuthScreen(Group):
             file.write(f"{login}\n{password}")
 
         self.finish_status = FinishStatus.ok
+        self.screen.fill("black")
+        pg.display.flip()
         self.terminate()
 
     def exec(self) -> str:
