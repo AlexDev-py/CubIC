@@ -385,6 +385,7 @@ class Field(WidgetsGroup):
         Виджет поля.
         :param parent: ...
         """
+        font = os.environ["FONT"]
         resolution = Resolution.converter(os.environ["resolution"])
 
         height = width = min(resolution)  # Размеры поля
@@ -450,6 +451,20 @@ class Field(WidgetsGroup):
             size=(round(self.block_width), round(self.block_height)),
         )
         self.finish: pg.Rect = ...
+
+        self.lvl_label = Label(
+            None,
+            f"{self.name}-LvlLabel",
+            x=round(self.block_width),
+            y=round(self.block_height - self.block_height * 0.3),
+            height=round(self.block_height),
+            text=f" {self.network_client.room.lvl} уровень ",
+            background=pg.Color("#122321"),
+            border_color=pg.Color("#b9a66d"),
+            border_width=3,
+            padding=3,
+            font=pg.font.Font(font, round(self.block_height - 12)),
+        )
 
         self.update_field()
 
@@ -662,6 +677,8 @@ class Field(WidgetsGroup):
                 self._finish_image.get_height(),
             )
             image.blit(self._finish_image, self.finish)
+
+        image.blit(self.lvl_label.image, self.lvl_label.rect)
 
         self.field_image = image
 
