@@ -23,7 +23,7 @@ from loguru import logger
 
 import hashing
 from base import Thread, Label, Group, Text, Anchor
-from utils import FinishStatus
+from utils import FinishStatus, load_image
 
 if ty.TYPE_CHECKING:
     from network import NetworkClient
@@ -193,6 +193,8 @@ class StartAppScreen(Group):
             ):
                 self.fix_media_files()
                 break
+            if file_path.endswith(".png"):
+                load_image(file_path, "")
 
     def fix_media_files(self):
         self.status.text = "Восстановление файлов"
@@ -207,7 +209,7 @@ class StartAppScreen(Group):
         with zipfile.ZipFile(archive) as zip_file:  # Разархивация
             zip_file.extractall(os.environ["APP_DIR"])
 
-        __import__("game")
+        self.check_files()
 
     def render(self) -> None:
         """

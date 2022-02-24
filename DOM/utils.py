@@ -116,17 +116,20 @@ def load_image(
     :return: Готовое изображение.
     """
     # Путь к файлу(если namespace не указан, файл ищется в директории приложения)
-    path = os.path.join(namespace or os.environ["APP_DIR"], file_name)
-    if not os.path.isfile(path):
-        if path not in _images_cash:
-            _images_cash[path] = None
-            logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
-        # Возвращаем пустое изображение
-        return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
+    path = os.path.join(namespace or os.environ["APP_DIR"], file_name).replace(
+        "\\", "/"
+    )
 
     if not (image := _images_cash.get(path)):
-        image = pg.image.load(path).convert_alpha()
-        _images_cash[path] = image
+        if not os.path.isfile(path):
+            if path not in _images_cash:
+                _images_cash[path] = None
+                logger.opt(colors=True).error(f"Файл <y>{path}</y> не найден")
+            # Возвращаем пустое изображение
+            return pg.Surface((1, 1), pg.SRCALPHA).convert_alpha()
+
+        _images_cash[path] = image = pg.image.load(path).convert_alpha()
+
     if size is not None:
         if not save_ratio:
             image = pg.transform.scale(image, size)
@@ -165,8 +168,8 @@ class LoadingAlert(Alert):
         :param parent_size: Размер родительского виджета.
         :param width: Ширина виджета.
         """
-        font_size = int(os.environ.get("font_size", 20))
-        font = os.environ.get("font")
+        font_size = int(os.environ.get("FONT_SIZE", 20))
+        font = os.environ.get("FONT")
 
         super(LoadingAlert, self).__init__(
             parent,
@@ -221,8 +224,8 @@ class InfoAlert(LoadingAlert):
         :param parent_size: Размеры родительского виджета.
         :param width: Ширина информационного виджета.
         """
-        font_size = int(os.environ.get("font_size", 17))
-        font = os.environ.get("font")
+        font_size = int(os.environ.get("FONT_SIZE", 17))
+        font = os.environ.get("FONT")
 
         super(InfoAlert, self).__init__(
             parent, name, parent_size=parent_size, width=width
@@ -345,8 +348,8 @@ class LoadingScreen(Alert):
         :param name: Название объекта.
         :param parent_size: Размер родительского виджета.
         """
-        font_size = int(os.environ.get("font_size", 20))
-        font = os.environ.get("font")
+        font_size = int(os.environ.get("FONT_SIZE", 20))
+        font = os.environ.get("FONT")
 
         super(LoadingScreen, self).__init__(
             parent,
