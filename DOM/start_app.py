@@ -93,7 +93,7 @@ class StartAppScreen(Group):
         Процесс запуска приложения.
         TODO:
             Проверяет целостность файлов.
-            Проверяет наличие обновления клиента.
+        Проверяет наличие обновления клиента.
         """
         logger.debug("Загрузка клиента")
         while not self.network_client.sio.connected:
