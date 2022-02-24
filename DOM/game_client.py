@@ -2292,7 +2292,9 @@ class GameClientScreen(Group):
                                 self.loading_screen.show_message(
                                     "Переход на новый уровень"
                                 )
-                                self.network_client.start_game()
+                                self.network_client.start_game(
+                                    fail_callback=self.info_alert.show_message
+                                )
 
                     if self.dices_widget.enabled:
                         if self.dices_widget.dice.get_global_rect().collidepoint(

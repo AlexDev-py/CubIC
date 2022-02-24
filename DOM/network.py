@@ -387,7 +387,11 @@ class NetworkClient:
 
     # === START GAME ===
 
-    def start_game(self) -> None:
+    def start_game(self, fail_callback: ty.Callable[[str], ...]) -> None:
+        self.sio.on(
+            "start game fail",
+            lambda response: fail_callback(response.get("msg", "err")),
+        )
         self.sio.emit("start game", dict(room_id=self.room.room_id))
 
     def on_loading_game(self, callback: ty.Callable[[], ...]) -> None:
