@@ -928,7 +928,15 @@ class ItemsWidget(WidgetsGroup):
 
 
 class ItemStand(WidgetsGroup):
-    def __init__(self, name: str, x: int, y: int, width: int, item: Item):
+    def __init__(
+        self,
+        name: str,
+        x: int,
+        y: int,
+        width: int,
+        icon_width: int,
+        item: Item,
+    ):
         """
         Стенд с предметом.
         :param name: Название виджета.
@@ -937,7 +945,6 @@ class ItemStand(WidgetsGroup):
         :param width: Ширина виджета.
         :param item: Предмет.
         """
-        icon_size = int(os.environ["icon_size"])
 
         self.item = item
 
@@ -947,13 +954,13 @@ class ItemStand(WidgetsGroup):
             self,
             f"{name}-StandLabel",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
-            y=round(icon_size / 3),
+            y=round(icon_width / 3),
             width=lambda obj: obj.sprite.get_width(),
             height=lambda obj: obj.sprite.get_height(),
             sprite=load_image(
                 f"stand{item.lvl if item else 1}.png",
                 namespace=os.environ["ITEM_STANDS_PATH"],
-                size=(icon_size * 2, None),
+                size=(icon_width * 2, None),
                 save_ratio=True,
             ),
         )
@@ -963,13 +970,13 @@ class ItemStand(WidgetsGroup):
             f"{name}-ItemIconLabel",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
             y=0,
-            width=icon_size,
-            height=icon_size,
+            width=lambda obj: obj.sprite.get_width(),
+            height=lambda obj: obj.sprite.get_height(),
             sprite=(
                 load_image(
                     item.icon,
                     namespace=os.environ["ITEMS_PATH"],
-                    size=(icon_size, icon_size),
+                    size=(icon_width, icon_width),
                 )
                 if item
                 else None
@@ -1684,12 +1691,21 @@ class ShopMenu(WidgetsGroup):
         icon_size = int(int(os.environ["icon_size"]))
 
         # Кол-во предметов в строке
-        k = 3 if len(self.network_client.room.players) < 4 else 5
-        in_line_count = math.ceil(len(self.network_client.room.shop) / k)
-        width = int((self.rect.width - self.padding * 2) / in_line_count)
-        while width < icon_size * 2:
-            in_line_count -= 1
+        max_height = (icon_size * 2 + round(icon_size / 3)) * 4
+        height = float("inf")
+        width = icon_width = 0
+        in_line_count = (
+            len(self.network_client.room.players)
+            if len(self.network_client.room.players) <= 3
+            else 4
+        ) - 1
+
+        while height > max_height:
+            in_line_count += 1
+            lines = math.ceil(len(self.network_client.room.shop) / in_line_count)
             width = int((self.rect.width - self.padding * 2) / in_line_count)
+            icon_width = icon_size if width > icon_size * 2 else round((width - 6) / 2)
+            height = (icon_width * 2 + round(icon_width / 3)) * lines
 
         if not len(self.items):  # Если это первый предмет
             x = 0
@@ -1702,7 +1718,12 @@ class ShopMenu(WidgetsGroup):
                 y += self.items[-1].rect.height + icon_size / 3
 
         widget = ItemStand(
-            f"{self.name}-{len(self.items) + 1}-ItemWidget", x, y, width, item
+            f"{self.name}-{len(self.items) + 1}-ItemWidget",
+            x,
+            y,
+            width,
+            icon_width,
+            item,
         )
         self.items.append(widget)
         return widget
