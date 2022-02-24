@@ -22,7 +22,6 @@ from base import (
     Label,
     Anchor,
     Line,
-    Thread,
     Alert,
     InputBox,
 )
@@ -518,11 +517,10 @@ class Social(WidgetsGroup):
         network_client.on_delete_friend(callback=self.on_delete_friend)
         network_client.on_add_friend(callback=self.on_add_friend)
         network_client.on_change_user_status(callback=self.on_change_user_status)
-        network_client.on_friend_request(callback=self.on_friend_request)
+        network_client.on_friend_request(callback=self.update_friend_requests)
 
         # Обновляем список друзей и запросов в отдельном потоке
-        Thread(worker=self.load_friends).run()
-        Thread(worker=self.load_friend_requests).run()
+        self.network_client.get_social(callback=self.load_social)
 
     def on_delete_friend(self, user: User) -> None:
         """
@@ -579,27 +577,17 @@ class Social(WidgetsGroup):
         except pg.error:
             pass
 
-    def on_friend_request(self) -> None:
-        """
-        Запрос в друзья.
-        """
-        self.load_friend_requests()
-
-    def load_friends(self) -> None:
-        """
-        Обновляет список друзей.
-        """
-        self.network_client.update_user()  # Обновляем данные о текущем пользователе
+    def load_social(self, friends: list[User], friend_requests: list[User]) -> None:
         self.user_widget.status.text = self.network_client.user.status.text
         self.user_widget.status.color = self.network_client.user.status.color
 
+        self.update_friends(friends)
+        self.update_friend_requests(friend_requests)
+
+    def update_friends(self, friends: list[User]) -> None:
         logger.opt(colors=True).trace(
             f"Обновление списка друзей: <y>{self.network_client.user.friends}</y>"
         )
-        friends = [
-            self.network_client.get_user(uid)
-            for uid in self.network_client.user.friends
-        ]  # Получаем информацию о друзьях
 
         # Удаляем старые виджеты
         for friend in self.friends:
@@ -636,20 +624,11 @@ class Social(WidgetsGroup):
                 can_invite=lambda: self.network_client.room is not ...,
             )
 
-    def load_friend_requests(self) -> None:
-        """
-        Обновляет список запросов в друзья.
-        """
-        self.network_client.update_user()  # Обновляем данные о текущем пользователе
-
+    def update_friend_requests(self, friend_requests: list[User]) -> None:
         logger.opt(colors=True).trace(
             "Обновление списка запросов в друзья: "
             f"<y>{self.network_client.user.friend_requests}</y>"
         )
-        users = [
-            self.network_client.get_user(uid)
-            for uid in self.network_client.user.friend_requests
-        ]  # Получаем информацию о пользователях, отправивших запрос дружбы
 
         # Удаляем старые виджеты
         for user in self.friend_requests.friend_requests:
@@ -659,7 +638,7 @@ class Social(WidgetsGroup):
         # Добавляем новые виджеты
         y = self.friend_requests.title.rect.bottom + 20
         x = 0
-        for i, user in enumerate(users):
+        for i, user in enumerate(friend_requests):
             self.friend_requests.friend_requests.append(
                 FriendRequestWidget(
                     self.friend_requests,
@@ -673,5 +652,3 @@ class Social(WidgetsGroup):
             if (i + 1) % 3 == 0:
                 x = 0
                 y += self.friend_requests.friend_requests[-1].rect.height
-
-        self.parent.update()

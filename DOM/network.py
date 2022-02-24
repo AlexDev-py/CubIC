@@ -146,6 +146,19 @@ class NetworkClient:
 
     # ===== FRIENDS =====
 
+    def get_social(self, callback: ty.Callable[[list[User], list[User]], ...]) -> None:
+        self.sio.on(
+            "get social",
+            lambda response: (
+                self.__setattr__("user", User(**response["me"])),
+                callback(
+                    [User(**user) for user in response["friends"]],
+                    [User(**user) for user in response["friend_requests"]],
+                ),
+            ),
+        )
+        self.sio.emit("get social")
+
     def send_friend_request(
         self,
         username: str,
@@ -169,14 +182,14 @@ class NetworkClient:
         )
         self.sio.emit("send friend request", dict(username=username))
 
-    def on_friend_request(self, callback: ty.Callable[[], ...]) -> None:
+    def on_friend_request(self, callback: ty.Callable[[list[User]], ...]) -> None:
         self.sio.on(
             "friend request",
             lambda response: (
                 logger.opt(colors=True).info(
-                    f"Запрос дружбы от <y>{response['user']['username']}</y>"
+                    f"Запрос дружбы от <y>{response['sender']['username']}</y>"
                 ),
-                callback(),
+                callback([User(**user) for user in response["friend_requests"]]),
             ),
         )
 
@@ -778,13 +791,6 @@ class NetworkClient:
             _disconnect()
 
         self.sio.wait()
-
-    def get_user(self, uid: int) -> User:
-        response = self._send_request("user", uid=uid)
-        return User(**response)
-
-    def update_user(self) -> None:
-        self.user = self.get_user(self.user.uid)
 
     def on_error(self, callback: ty.Callable[[str], ...]) -> None:
         self.sio.on(
