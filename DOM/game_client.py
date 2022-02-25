@@ -1173,7 +1173,7 @@ class ShortPlayerWidget(WidgetsGroup):
             y=lambda obj: self.icon.rect.height / 2 - obj.rect.height / 2,
             text=player.username,
             color=(
-                pg.Color("#20478a")
+                pg.Color("#b9a66d")
                 if f"p{player.uid}" == parent.network_client.room.queue
                 else pg.Color("white")
             ),
@@ -1275,12 +1275,12 @@ class PlayerWidget(WidgetsGroup):
             save_ratio=True,
         )
         self.username.text = player.username
-        if self.username.color == pg.Color("#fcba03"):
-            color = pg.Color("#fcba03")
-        elif f"p{player.uid}" == self.network_client.room.queue:
-            color = pg.Color("#20478a")
-        else:
+        if self.username.color == pg.Color("red"):
             color = pg.Color("red")
+        elif f"p{player.uid}" == self.network_client.room.queue:
+            color = pg.Color("#b9a66d")
+        else:
+            color = pg.Color("white")
         self.username.color = color
 
         if self.items is ...:
@@ -2068,7 +2068,9 @@ class GameClientScreen(Group):
 
             for widget in [*self.players_menu.players, self.players_menu.client_player]:
                 color = (
-                    pg.Color("#20478a") if widget.player.uid == uid else pg.Color("red")
+                    pg.Color("#b9a66d")
+                    if widget.player.uid == uid
+                    else pg.Color("white")
                 )
                 if widget.username.color != color:
                     widget.username.color = color
@@ -2077,7 +2079,7 @@ class GameClientScreen(Group):
             self.pass_move_button.disable()
 
             for widget in [*self.players_menu.players, self.players_menu.client_player]:
-                color = pg.Color("red")
+                color = pg.Color("white")
                 if widget.username.color != color:
                     widget.username.color = color
 
@@ -2098,7 +2100,7 @@ class GameClientScreen(Group):
             self.pass_move_button.disable()
 
         for widget in [*self.players_menu.players, self.players_menu.client_player]:
-            color = pg.Color("#fcba03") if widget.player.uid == uid else pg.Color("red")
+            color = pg.Color("red") if widget.player.uid == uid else pg.Color("white")
             if widget.username.color != color:
                 widget.username.color = color
 
