@@ -9,7 +9,7 @@ import shutil
 
 import PyInstaller.__main__
 
-__version__ = "1.0.0-alpha.3"
+__version__ = "1.0.0-beta.1"
 
 # Изменяем версию в run.py
 with open(r"..\DOM\run.py", encoding="utf-8") as file:

@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "DOM"
-!define PRODUCT_VERSION "1.0.0-alpha.3"
+!define PRODUCT_VERSION "1.0.0-beta.1"
 !define PRODUCT_PUBLISHER "5-Abobes INC :D"
 !define PRODUCT_WEB_SITE "https://github.com/AlexDev-py/DOM"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\DOM.exe"

@@ -75,7 +75,7 @@ os.environ["CUBE_PATH"] = os.path.join(os.environ["APP_DIR"], "cube")
 # Шрифт
 os.environ["FONT"] = os.path.join(os.environ["APP_DIR"], "font.ttf")
 # Версия приложения
-os.environ["VERSION"] = "1.0.0-alpha.3"
+os.environ["VERSION"] = "1.0.0-beta.1"
 # Уровень логирования
 os.environ["LOGGING_LEVEL"] = args.ll
 # Сервер
