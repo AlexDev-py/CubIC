@@ -474,6 +474,12 @@ class NetworkClient:
             ),
         )
 
+    def ping(self, y: int, x: int) -> None:
+        self.sio.emit("ping", dict(room_id=self.room.room_id, y=y, x=x))
+
+    def on_ping(self, callback: ty.Callable[[int, int], ...]) -> None:
+        self.sio.on("ping", lambda response: callback(response["y"], response["x"]))
+
     # === ITEMS ===
 
     def buy_item(self, item_index: int, fail_callback: ty.Callable[[str], ...]) -> None:

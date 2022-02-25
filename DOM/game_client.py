@@ -401,6 +401,12 @@ class ItemDropMenu(DropMenu):
 
 
 @dataclass
+class Ping:
+    rect: pg.Rect
+    spawn_time: int
+
+
+@dataclass
 class EntityWidget:
     icon: pg.Surface
     rect: pg.Rect
@@ -521,7 +527,16 @@ class Field(WidgetsGroup):
             font=pg.font.Font(font, round(self.block_height - 12)),
         )
 
+        self._ping_image = load_image(
+            "ping.png",
+            namespace=os.environ["UI_ICONS_PATH"],
+            size=(round(self.block_width), round(self.block_height)),
+        )
+        self.pings: dict[Cord, Ping] = {}
+
         self.update_field()
+
+        Thread(self._manage_pings, repetitive=True).run()
 
     def init_ways(self, ways: list[Cords]) -> None:
         self.ways.clear()
@@ -723,6 +738,8 @@ class Field(WidgetsGroup):
                 if tuple(self.boss.data.pos) == (i, j):
                     if self.boss.data.hp > 0:
                         self.boss.blit(image)
+                if ping := self.pings.get((i, j)):
+                    image.blit(self._ping_image, ping)
 
         if self.network_client.room.boss.hp == 0:
             self.finish = pg.Rect(
@@ -736,6 +753,30 @@ class Field(WidgetsGroup):
         image.blit(self.lvl_label.image, self.lvl_label.rect)
 
         self.field_image = image
+
+    def _manage_pings(self) -> ty.NoReturn:
+        while True:
+            upd = False
+            for pos, ping in self.pings.copy().items():
+                if time.time() - ping.spawn_time > 3:
+                    del self.pings[pos]
+                    upd = True
+            if upd:
+                self.update_field()
+
+    def spawn_ping(self, y: int, x: int) -> None:
+        pos = (y, x)
+        if pos in self.pings:
+            self.pings[pos].spawn_time = int(time.time())
+        else:
+            rect = pg.Rect(
+                self.block_width * x,
+                self.block_height * y,
+                round(self.block_width),
+                round(self.block_height),
+            )
+            self.pings[pos] = Ping(rect, int(time.time()))
+            self.update_field()
 
     @property
     def field_image(self) -> pg.Surface:
@@ -1981,6 +2022,7 @@ class GameClientScreen(Group):
                 self.game_over_alert.show(),
             )
         )
+        self.network_client.on_ping(callback=self.field.spawn_ping)
 
         # ITEMS
         self.network_client.on_buying_an_item(
@@ -2255,6 +2297,9 @@ class GameClientScreen(Group):
                     # Обработка открытия / закрытия меню
                     if self.esc_menu.parent.hidden:
                         self.esc_menu.show()
+                    else:
+                        self.esc_menu.settings.hide()
+                        self.esc_menu.hide()
             elif event.type == ButtonClickEvent.type:
                 # Кнопка покупки предмета
                 if event.obj == self.shop.buy_button:
@@ -2294,6 +2339,16 @@ class GameClientScreen(Group):
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == pg.BUTTON_LEFT:
                     if self.field.enabled:
+                        if pg.key.get_mods() & pg.KMOD_ALT:
+                            pos = (
+                                event.pos[1] // round(self.field.block_height),
+                                (event.pos[0] - self.field.rect.left)
+                                // round(self.field.block_width),
+                            )
+                            if self.network_client.room.field[pos[0]][pos[1]]:
+                                self.network_client.ping(*pos)
+                                return
+
                         for pos, rect in self.field.ways.items():
                             if self.field.get_global_rect_of(rect).collidepoint(
                                 event.pos
@@ -2356,7 +2411,6 @@ class GameClientScreen(Group):
                                 self.network_client.start_game(
                                     fail_callback=self.info_alert.show_message
                                 )
-
                     if self.dices_widget.enabled:
                         if self.dices_widget.dice.get_global_rect().collidepoint(
                             event.pos
