@@ -987,8 +987,8 @@ class ItemStand(WidgetsGroup):
             f"{name}-ItemIconLabel",
             x=lambda obj: round(self.rect.width / 2 - obj.rect.width / 2),
             y=0,
-            width=lambda obj: obj.sprite.get_width(),
-            height=lambda obj: obj.sprite.get_height(),
+            width=lambda obj: (obj.sprite.get_width() if obj.sprite else icon_width),
+            height=lambda obj: (obj.sprite.get_height() if obj.sprite else icon_width),
             sprite=(
                 load_image(
                     item.icon,
