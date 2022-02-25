@@ -79,7 +79,8 @@ class Alert(WidgetsGroup):
         logger.opt(colors=True).debug(f"Диалог <y>{self}</y> открыт")
         self._tab.show()
         self._tab.enable()
-        self.__dict__["disabled_widgets"] = []
+        if self.__dict__.get("disabled_widgets") is None:
+            self.__dict__["disabled_widgets"] = []
         for widget in self._tab.parent.objects:
             if widget != self._tab:
                 if widget.enabled:
