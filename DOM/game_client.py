@@ -36,6 +36,61 @@ if ty.TYPE_CHECKING:
 # ==== MENUS ====
 
 
+class MyQueueAlert(DropMenu):
+    def __init__(self, parent: WidgetsGroup):
+        resolution = Resolution.converter(os.environ["resolution"])
+        font_size = int(os.environ["font_size"])
+        font = os.environ.get("font")
+
+        super(MyQueueAlert, self).__init__(
+            parent,
+            "MyQueueAlert",
+            width=round(resolution.width * 0.4),
+            padding=20,
+            background=pg.Color("#152622"),
+            border_color=pg.Color("#f0ce69"),
+            border_width=3,
+        )
+
+        self.msg = Label(
+            self,
+            f"{self.name}-Label",
+            x=lambda obj: round(
+                (self.rect.width - self.padding * 2 - self.border_width * 2) / 2
+                - obj.rect.width / 2
+            ),
+            y=0,
+            text="Ваш ход",
+            font=pg.font.Font(font, font_size),
+        )
+
+        self.pos = (
+            round(resolution.width / 2 - self.rect.width / 2),
+            round(resolution.height / 2 - self.rect.height / 2),
+        )
+
+    def alert(self) -> None:
+        self.open(self.pos)
+
+    def handle_event(self, event: pg.event.Event) -> None:
+        """
+        Модифицируем базовый метод.
+        Отключаем открытие меню по нажатию на виджет.
+        :param event: ...
+        """
+        if not self.hidden:
+            WidgetsGroup.handle_event(self, event)
+        if event.type == pg.MOUSEBUTTONDOWN:
+            # Скрываем виджет
+            if event.button == pg.BUTTON_RIGHT:
+                if self._widget.get_global_rect().collidepoint(event.pos):
+                    return
+            if hasattr(event, "pos"):
+                if not self.hidden:
+                    if not self.rect.collidepoint(event.pos):
+                        self.hide()
+
+
 class GameOverStatistic(WidgetsGroup):
     eng_rus = {
         "damage_received": "Получено урона",
@@ -1904,6 +1959,7 @@ class GameClientScreen(Group):
             parent_size=resolution,
             width=int(resolution.width * 0.7),
         )
+        self.my_queue_alert = MyQueueAlert(self.field)
         self.game_over_alert = GameOverAlert(self)
 
         self.network_client.on_leaving_the_lobby(
@@ -2060,6 +2116,9 @@ class GameClientScreen(Group):
         if queue.startswith("p"):
             uid = int(queue[1:])
             if uid == self.players_menu.client_player.player.uid:
+                if len(self.network_client.room.players) > 1:
+                    self.my_queue_alert.alert()
+                    self.my_queue_alert.update()
                 self.pass_move_button.show()
                 self.pass_move_button.enable()
             else:
