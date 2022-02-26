@@ -402,6 +402,9 @@ class ItemDropMenu(DropMenu):
 
 @dataclass
 class Ping:
+    # TODO: Пинги перестают исчезать.
+    #  Возможно это связано с тем, что при изменении разрешения создается новый
+    #  Thread Filed._manage_pings
     rect: pg.Rect
     spawn_time: int
 
